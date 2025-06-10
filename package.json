@@ -1,6 +1,6 @@
 {
   "name": "url-ast",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "High-performance typed URL parser with AST-based analysis, automatic type casting, and route pattern matching for modern web applications",
   "main": "dist/cjs/index.cjs",
   "module": "dist/mjs/index.js",
