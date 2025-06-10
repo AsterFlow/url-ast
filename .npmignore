@@ -1,0 +1,53 @@
+# Development folders
+/node_modules
+/test
+/src
+/.vscode
+/benchmarks
+/examples
+/.github
+
+# Config files
+.gitignore
+.gitattributes
+.npmignore
+
+# Development files
+build.ts
+test.ts
+*.test.ts
+PUBLISHING.md
+
+# Lock files
+bun.lockb
+yarn.lock
+pnpm-lock.yaml
+
+# Config files
+eslint.config.js
+tsconfig.json
+.eslintrc*
+.prettierrc*
+
+# Coverage
+/coverage
+.nyc_output
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.tgz
+*.temp
+.cache 

@@ -1,0 +1,83 @@
+{
+  "name": "url-ast",
+  "version": "1.0.0",
+  "description": "High-performance typed URL parser with AST-based analysis, automatic type casting, and route pattern matching for modern web applications",
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/mjs/index.js",
+  "types": "dist/types/index.d.ts",
+  "typings": "dist/types/index.d.ts",
+  "type": "module",
+  "license": "MIT",
+  "author": "Ashu11-A",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ashu11-A/url-ast.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Ashu11-A/url-ast/issues"
+  },
+  "homepage": "https://github.com/Ashu11-A/url-ast",
+  "keywords": [
+    "url",
+    "parser",
+    "ast",
+    "abstract-syntax-tree",
+    "url-parser",
+    "url-analyzer",
+    "typescript",
+    "router",
+    "routing",
+    "path-parser",
+    "query-string",
+    "url-pattern",
+    "parameter-extraction",
+    "type-casting",
+    "typed-params",
+    "restful",
+    "api",
+    "high-performance",
+    "url-manipulation",
+    "dynamic-routes",
+    "asterflow",
+    "bun"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/mjs/index.js",
+      "require": "./dist/cjs/index.cjs"
+    }
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "benchmark:constructor": "bun benchmarks/constructor.ts",
+    "benchmark:state": "bun benchmarks/state.ts",
+    "dev": "bun run src/index.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:coverage": "bun test --coverage",
+    "lint": "eslint -c eslint.config.js --fix",
+    "type-check": "tsc --noEmit",
+    "build": "bun run build.ts",
+    "prepublishOnly": "bun run test && bun run build && bun run test:publish",
+    "test:publish": "npm pack --dry-run && echo '\n✅ Package is ready to publish!'",
+    "pack": "npm pack",
+    "publish:dry": "npm publish --dry-run"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.28.0",
+    "@types/bun": "latest",
+    "cronometro": "^5.3.0",
+    "dts-bundle-generator": "^9.3.1",
+    "eslint": "^9.28.0",
+    "globals": "^16.2.0",
+    "tsup": "^8.0.2",
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^8.34.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
