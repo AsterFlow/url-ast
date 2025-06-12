@@ -11,12 +11,12 @@
   "author": "Ashu11-A",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Ashu11-A/url-ast.git"
+    "url": "git+https://github.com/AsterFlow/url-ast.git"
   },
   "bugs": {
-    "url": "https://github.com/Ashu11-A/url-ast/issues"
+    "url": "https://github.com/AsterFlow/url-ast/issues"
   },
-  "homepage": "https://github.com/Ashu11-A/url-ast",
+  "homepage": "https://github.com/AsterFlow/url-ast",
   "keywords": [
     "url",
     "parser",
