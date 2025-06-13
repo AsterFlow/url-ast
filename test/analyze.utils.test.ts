@@ -16,6 +16,6 @@ describe('Analyze: Utility Methods', () => {
     const analyzer = new Analyze('/some/path')
     expect(analyzer.getBuffer()).toBeInstanceOf(Buffer)
     // O tamanho do buffer deve ser o número de nós * tamanho de cada nó (fixo)
-    expect(analyzer.getBuffer().length).toBe(analyzer.nodes.length * Node.SIZE)
+    expect(analyzer.getBuffer().length).toBe(analyzer.ast.nodes.length * Node.SIZE)
   })
 })

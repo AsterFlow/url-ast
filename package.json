@@ -1,6 +1,7 @@
 {
   "name": "url-ast",
-  "version": "1.0.3",
+  "version": "2.0.1",
+  "private": true,
   "description": "High-performance typed URL parser with AST-based analysis, automatic type casting, and route pattern matching for modern web applications",
   "main": "dist/cjs/index.cjs",
   "module": "dist/mjs/index.js",
@@ -61,7 +62,7 @@
     "lint": "eslint -c eslint.config.js --fix",
     "type-check": "tsc --noEmit",
     "build": "bun run build.ts",
-    "prepublishOnly": "bun run test && bun run build && bun run test:publish",
+    "publish:all": "bun run publish.ts",
     "test:publish": "npm pack --dry-run && echo '\n✅ Package is ready to publish!'",
     "pack": "npm pack",
     "publish:dry": "npm publish --dry-run"

@@ -1,4 +1,5 @@
 export * from './controllers/Analyze'
+export * from './controllers/AST'
 export * from './controllers/Node'
 export * from './controllers/Error'
 export * from './types/analyze'

@@ -1,5 +1,3 @@
-// tests/analyze.errors.test.ts
-
 import { expect, describe, it } from 'bun:test'
 import { Analyze } from '../src'
 

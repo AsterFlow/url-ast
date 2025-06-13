@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ParsePath } from '../types/analyze'
-import { CatchAllExpression, ContentTypes, Delimiters, delimitersValues, EncodingSymbols, InternalExpression, OriginExpression, RawTokens, type AllValues } from '../types/node'
-import { AnsiColor, colorize, expressionKeyColorMap } from '../utils/colors'
+import { ContentTypes, Delimiters, delimitersValues, EncodingSymbols, InternalExpression, OriginExpression } from '../types/node'
 import decodeURIComponentUTF8 from '../utils/decodeURL'
-import { colorizePath, renderTable } from '../utils/table'
+import { AST } from './AST'
 import { ErrorLog } from './Error'
 import { Node } from './Node'
 
@@ -39,10 +40,9 @@ export class Analyze<
   const TypedPath extends ParsePath<Path> = ParsePath<Path>,
   const Parser extends Analyze<string> | undefined = undefined
 >{
-  private readonly expressions: Set<number>
   readonly input: Path
-  readonly nodes: Node[]
   readonly errors: ErrorLog[]
+  readonly ast: AST<Path>
 
   base?: Parser
   isParser: Parser extends undefined ? true : false
@@ -58,9 +58,8 @@ export class Analyze<
       this.isParser = true as Parser extends undefined ? true : false
     }
   
-    const { expressions, nodes } = Analyze.parser(this.input, this.errors)
-    this.nodes = nodes
-    this.expressions = expressions
+    this.ast = new AST(this.input, this.errors)
+    this.errors.push(...this.ast.errors)
   }
 
   /**
@@ -82,23 +81,23 @@ export class Analyze<
     if (this.base && this.base.isParser) {
       const params: Record<string, string | number | boolean | string[]> = {}
 
-      if (this.base.expressions.has(InternalExpression.Variable)) {
-        const slashs = this.base.nodes.filter((node) => node.expression === Delimiters.Slash)
+      if (this.base.ast.expressions.has(InternalExpression.Variable)) {
+        const slashs = this.base.ast.nodes.filter((node) => node.expression === Delimiters.Slash)
     
         for (let idx = 0; idx < slashs.length; idx ++) {
-          const variable = this.base.getNode(slashs[idx]!.id + 2)
+          const variable = this.base.ast.getNode(slashs[idx]!.id + 2)
           if (variable?.expression !== InternalExpression.Variable) continue
     
-          const type = this.base.getType(variable.id + 2) ?? ContentTypes.String
+          const type = this.base.ast.getType(variable.id + 2) ?? ContentTypes.String
     
-          const nodeSlash = this.getNodeByType(Delimiters.Slash, idx)
+          const nodeSlash = this.ast.getNodeByType(Delimiters.Slash, idx)
           if (!nodeSlash) continue
     
-          const nextValue = this.getNode(nodeSlash?.id + 1)
+          const nextValue = this.ast.getNode(nodeSlash?.id + 1)
           if (nextValue?.expression !== InternalExpression.Path) continue
     
-          const key = this.base.getContent(variable)
-          const raw = this.getContent(nextValue)
+          const key = this.base.ast.getContent(variable)
+          const raw = this.ast.getContent(nextValue)
     
           params[key] = this.castValue(raw, type, nextValue.start, nextValue.end)
         }
@@ -107,25 +106,25 @@ export class Analyze<
       return params as any
     }
   
-    const params: string[] = []
-    if (!this.expressions.has(InternalExpression.Variable)) return params
+    const params = new Set<string>()
+    if (!this.ast.expressions.has(InternalExpression.Variable)) return Array.from(params.values())
     
-    for (let index = 0; index < this.nodes.length; index++) {
-      const node = this.nodes[index]
+    for (let index = 0; index < this.ast.nodes.length; index++) {
+      const node = this.ast.nodes[index]
       if (!node || node?.expression !== InternalExpression.Variable) continue
       
-      const variable = decodeURIComponentUTF8(this.getContent(node))
+      const variable = decodeURIComponentUTF8(this.ast.getContent(node))
       if (variable === null) {
         this.errors.push(new ErrorLog('E_DECODE_URI', 'Failed to decode URI component for a variable.', node.start, node.end))
         continue
       }
-      if (params.includes(variable)) {
+      if (params.has(variable)) {
         this.errors.push(new ErrorLog('E_DUPLICATE_PARAM', `Duplicate parameter name found: "${variable}".`, node.start, node.end))
       }
-      params.push(variable)
+      params.add(variable)
     }
 
-    return params
+    return Array.from(params.values())
   }
 
   /**
@@ -146,69 +145,69 @@ export class Analyze<
      */
     if (this.base && this.base.isParser) {
       const params: Record<string, string | number | boolean | string[]> = {}
-      if (!this.base.expressions.has(InternalExpression.Parameter)) return params as any
+      if (!this.base.ast.expressions.has(InternalExpression.Parameter)) return params as any
     
-      const definitionMap = this.base.nodes.reduce(
+      const definitionMap = this.base.ast.nodes.reduce(
         (map, n) => {
           if (n.expression !== InternalExpression.Parameter) return map
     
-          const content = this.base!.getContent(n)
+          const content = this.base!.ast.getContent(n)
           const type =
             n.type !== InternalExpression.Null
               ? n.type
-              : this.base!.getNode(n.id + 1)?.expression === EncodingSymbols.Equal
-                ? this.base!.getType(n.id + 2) ?? ContentTypes.String
+              : this.base!.ast.getNode(n.id + 1)?.expression === EncodingSymbols.Equal
+                ? this.base!.ast.getType(n.id + 2) ?? ContentTypes.String
                 : ContentTypes.String
     
-          map.set(content, type)
+          map.set(content, type as ContentTypes)
           return map
         },
         new Map<string, ContentTypes>()
       )
     
-      for (const node of this.nodes) {
+      for (const node of this.ast.nodes) {
         if (node.expression !== InternalExpression.Parameter) continue
     
-        const name = this.getContent(node, this.input)
+        const name = this.ast.getContent(node, this.input)
         const type = definitionMap.get(name)
         if (!type) continue
     
-        const valueNode = this.getNode(node.id + 2)
-        const raw = this.getValue(node.id) ?? ''
+        const valueNode = this.ast.getNode(node.id + 2)
+        const raw = this.ast.getValue(node.id) ?? ''
         params[name] = this.castValue(raw, type, valueNode?.start ?? node.start, valueNode?.end ?? node.end)
       }
     
       return params as any
     }
     const params = new Map<string, string | string[]>()
-    if (!this.expressions.has(InternalExpression.Parameter)) return params
+    if (!this.ast.expressions.has(InternalExpression.Parameter)) return params
     
-    for (let index = 0; index < this.nodes.length; index++) {
-      const node = this.nodes[index]
+    for (let index = 0; index < this.ast.nodes.length; index++) {
+      const node = this.ast.nodes[index]
       if (!node || node?.expression !== InternalExpression.Parameter) continue
       
-      const variable = decodeURIComponentUTF8(this.getContent(node))
+      const variable = decodeURIComponentUTF8(this.ast.getContent(node))
       if (variable === null) {
         this.errors.push(new ErrorLog('E_DECODE_URI', 'Failed to decode URI component for a search parameter.', node.start, node.end))
         continue
       }
 
       index++
-      const nextSymbol = this.nodes[index]
+      const nextSymbol = this.ast.nodes[index]
       if (!nextSymbol || nextSymbol.expression !== EncodingSymbols.Equal) {
         this.appendParam(params, variable, '')
         continue
       }
 
       index++
-      const nextNode = this.nodes[index]
+      const nextNode = this.ast.nodes[index]
       if (!nextNode || delimitersValues.includes(nextNode.type as number)
       ) {
         this.appendParam(params, variable, '')
         continue
       }
 
-      const content = this.getContent(nextNode)
+      const content = this.ast.getContent(nextNode)
       if (content === null) {
         this.errors.push(new ErrorLog('E_DECODE_URI', 'Failed to decode URI component for a search parameter value.', nextNode.start, nextNode.end))
         continue
@@ -246,15 +245,15 @@ export class Analyze<
       const output: Record<string, string> = {}
 
       if (
-        this.base.expressions.has(InternalExpression.Fragment)
-        && this.expressions.has(InternalExpression.Fragment)
+        this.base.ast.expressions.has(InternalExpression.Fragment)
+        && this.ast.expressions.has(InternalExpression.Fragment)
       ) {
-        const key = this.base.getNodeByType(InternalExpression.Fragment)
-        const fragment = this.getNodeByType(InternalExpression.Fragment)
+        const key = this.base.ast.getNodeByType(InternalExpression.Fragment)
+        const fragment = this.ast.getNodeByType(InternalExpression.Fragment)
     
         if (fragment && key) {
-          const keyString = this.base.getContent(key)
-          const fragmentValue = this.getContent(fragment)
+          const keyString = this.base.ast.getContent(key)
+          const fragmentValue = this.ast.getContent(fragment)
 
           output[keyString] = fragmentValue
         }
@@ -263,13 +262,13 @@ export class Analyze<
       return output as any
     }
 
-    if (!this.expressions.has(InternalExpression.Fragment)) return
+    if (!this.ast.expressions.has(InternalExpression.Fragment)) return
     
-    for (let index = 0; index < this.nodes.length; index++) {
-      const node = this.nodes[index]
+    for (let index = 0; index < this.ast.nodes.length; index++) {
+      const node = this.ast.nodes[index]
       if (!node || node?.expression !== InternalExpression.Fragment) continue
       
-      const variable = decodeURIComponentUTF8(this.getContent(node))
+      const variable = decodeURIComponentUTF8(this.ast.getContent(node))
       if (variable === null) {
         this.errors.push(new ErrorLog('E_DECODE_URI', 'Failed to decode URI component for the fragment.', node.start, node.end))
         return
@@ -291,18 +290,18 @@ export class Analyze<
     }
 
     // Get all actual path value nodes from the instance URL.
-    const instanceValueNodes = this.nodes.filter(n => n.expression === InternalExpression.Path)
+    const instanceValueNodes = this.ast.nodes.filter(n => n.expression === InternalExpression.Path)
     let instanceSegmentIndex = 0
 
     // Iterate through the base template's nodes to find definitions.
-    for (let i = 0; i < this.base.nodes.length; i++) {
-      const baseNode = this.base.nodes[i]
+    for (let i = 0; i < this.base.ast.nodes.length; i++) {
+      const baseNode = this.base.ast.nodes[i]
       if (!baseNode) continue
 
       // A. Handle Static Segments: Verify they match
       if (baseNode.expression === InternalExpression.Path) {
         const instanceNode = instanceValueNodes[instanceSegmentIndex]
-        if (!instanceNode || this.base.getContent(baseNode) !== this.getContent(instanceNode)) {
+        if (!instanceNode || this.base.ast.getContent(baseNode) !== this.ast.getContent(instanceNode)) {
           // Mismatch found, the URL does not match the template.
           return {}
         }
@@ -312,26 +311,26 @@ export class Analyze<
       
       // B. Handle Dynamic Segments: Find a `[` delimiter
       if (baseNode.expression === Delimiters.LeftBracket) {
-        const nextBaseNode = this.base.nodes[i + 1]
+        const nextBaseNode = this.base.ast.nodes[i + 1]
         if (!nextBaseNode) continue
 
         // Case 1: Catch-All segment `[...slug]`
         if (nextBaseNode.expression === InternalExpression.Ellipsis) {
-          const nameNode = this.base.nodes[i + 2]
-          const endNode = this.base.nodes[i + 3]
+          const nameNode = this.base.ast.nodes[i + 2]
+          const endNode = this.base.ast.nodes[i + 3]
           if (!nameNode || nameNode.expression !== InternalExpression.Slug || !endNode || endNode.expression !== Delimiters.RightBracket) continue
           
-          const varName = this.base.getContent(nameNode)
+          const varName = this.base.ast.getContent(nameNode)
 
           // Find how many static segments appear *after* this catch-all in the template.
-          const staticSegmentsAfter = this.base.nodes
+          const staticSegmentsAfter = this.base.ast.nodes
             .slice(i + 4)
             .filter(n => n.expression === InternalExpression.Path)
             .length
 
           // The value is the corresponding slice of instance nodes.
           const valueNodes = instanceValueNodes.slice(instanceSegmentIndex, instanceValueNodes.length - staticSegmentsAfter)
-          props[varName] = valueNodes.map(n => this.getContent(n))
+          props[varName] = valueNodes.map(n => this.ast.getContent(n))
           
           // A catch-all must be the last dynamic part, so we can stop.
           i += 3 // Advance index past `...`, `slug`, `]`
@@ -340,14 +339,14 @@ export class Analyze<
 
         // Case 2: Standard dynamic segment `[id]`
         if (nextBaseNode.expression === InternalExpression.Slug) {
-          const endNode = this.base.nodes[i + 2]
+          const endNode = this.base.ast.nodes[i + 2]
           if (!endNode || endNode.expression !== Delimiters.RightBracket) continue
           
-          const varName = this.base.getContent(nextBaseNode)
+          const varName = this.base.ast.getContent(nextBaseNode)
           const valueNode = instanceValueNodes[instanceSegmentIndex]
 
           if (valueNode) {
-            props[varName] = this.getContent(valueNode)
+            props[varName] = this.ast.getContent(valueNode)
             instanceSegmentIndex++
           }
           i += 2 // Advance index past `slug`, `]`
@@ -356,7 +355,7 @@ export class Analyze<
     }
     
     // Final check: if we haven't consumed all instance segments (e.g. extra parts in URL), it's not a match
-    const totalStaticSegmentsInBase = this.base.nodes.filter(n => n.expression === InternalExpression.Path).length
+    const totalStaticSegmentsInBase = this.base.ast.nodes.filter(n => n.expression === InternalExpression.Path).length
     if (!Object.keys(props).some(k => Array.isArray(props[k])) && instanceSegmentIndex !== instanceValueNodes.length) {
       // This check is for non-catch-all routes.
       if(instanceValueNodes.length !== totalStaticSegmentsInBase + Object.keys(props).length) return {}
@@ -377,12 +376,12 @@ export class Analyze<
    * ```
    */
   getPathname (): string {
-    const startPathname = this.nodes.find((node) => node.expression === Delimiters.Slash)
+    const startPathname = this.ast.nodes.find((node) => node.expression === Delimiters.Slash)
     let path = '/'
     if (!startPathname) return path
 
-    for (let index = startPathname.id + 1; index < this.nodes.length; index++) {
-      const node = this.nodes[index]!
+    for (let index = startPathname.id + 1; index < this.ast.nodes.length; index++) {
+      const node = this.ast.nodes[index]!
       if ([Delimiters.Query, Delimiters.Hash].includes(node.expression as Delimiters)) {
         break
       }
@@ -397,8 +396,8 @@ export class Analyze<
         InternalExpression.Slug,
         InternalExpression.Ellipsis,
         InternalExpression.Variable,
-      ].includes(node.expression as any)) {
-        path += this.getContent(node)
+      ].includes(node.expression as Delimiters | InternalExpression)) {
+        path += this.ast.getContent(node)
       }
     }
 
@@ -415,10 +414,10 @@ export class Analyze<
    * ```
    */
   getPort (): string | undefined {
-    const node = this.nodes.find((node) => node.expression ===  OriginExpression.Port)
+    const node = this.ast.nodes.find((node) => node.expression ===  OriginExpression.Port)
     if (!node) return
     
-    return this.getContent(node)
+    return this.ast.getContent(node)
   }
 
   /**
@@ -431,10 +430,10 @@ export class Analyze<
    * ```
    */
   getHostname (): string | undefined {
-    const node = this.nodes.find((node) => node.expression === OriginExpression.Hostname)
+    const node = this.ast.nodes.find((node) => node.expression === OriginExpression.Hostname)
     if (!node) return
     
-    return this.getContent(node)
+    return this.ast.getContent(node)
   }
 
   /**
@@ -447,10 +446,10 @@ export class Analyze<
    * ```
    */
   getProtocol (): string | undefined {
-    const node = this.nodes.find((node) => node.expression === OriginExpression.Protocol)
+    const node = this.ast.nodes.find((node) => node.expression === OriginExpression.Protocol)
     if (!node) return
 
-    return this.getContent(node)
+    return this.ast.getContent(node)
   }
 
   setParser (base: Parser) {
@@ -463,9 +462,26 @@ export class Analyze<
    * @returns {Buffer} The Buffer containing node data.
    */
   getBuffer(): Buffer {
-    const buf = Buffer.alloc(this.nodes.length * Node.SIZE)
-    this.nodes.forEach((node, i) => node.writeToBuffer(buf, i * Node.SIZE))
+    const buf = Buffer.alloc(this.ast.nodes.length * Node.SIZE)
+    this.ast.nodes.forEach((node, i) => node.writeToBuffer(buf, i * Node.SIZE))
     return buf
+  }
+
+  /**
+   * Checks if any errors were found during parsing.
+   * @returns {boolean} True if errors exist.
+   */
+  hasErrors(errors: ErrorLog[] = this.errors): boolean {
+    return errors.length > 0
+  }
+
+  /**
+   * Returns a formatted string of all parsing errors.
+   * @returns {string} The formatted error report.
+   */
+  displayErrors(errors: ErrorLog[] = this.errors): string {
+    if (!this.hasErrors(errors)) return 'No errors found.'
+    return errors.map(e => e.display(this.input)).join('\n\n')
   }
 
   /**
@@ -523,441 +539,6 @@ export class Analyze<
       return
     }
     }
-  }
-
-  /**
-   * Finds a Node by its index or its content string.
-   * 
-   * @param {string | number} idOrName - Node index or content to search.
-   * @param {Node[]} [nodes=this.nodes] - Optional node array to search.
-   * @param {?string} [input] - Optional input string context.
-   * @returns {Node | undefined} The matching Node or undefined.
-   */
-  getNode(idOrName: string | number, nodes: Node[] = this.nodes, input?: string): Node | undefined {
-    const getById = (id: number) => {
-      const node = nodes[id]
-      if (!node) return
-
-      return node
-    }
-
-    switch (typeof idOrName) {
-    case 'string': {
-      const id = nodes.findIndex((node) => this.getContent(node, input) === idOrName)
-      if (id === -1) return
-  
-      return getById(id)
-    }
-    case 'number': {
-      return getById(idOrName)
-    }
-    }
-  }
-
-  /**
-   * Finds the Nth Node of a given expression type.
-   * 
-   * @param {AllValues} type - Expression or delimiter type code.
-   * @param {number} [position=0] - Zero-based occurrence index.
-   * @param {Node[]} [nodes=this.nodes] - Optional node array to search.
-   * @returns {Node | undefined} The matching Node or undefined.
-   */
-  getNodeByType(type: AllValues, position: number = 0, nodes: Node[] = this.nodes): Node | undefined {
-    let elements = 0
-    for (const node of nodes) {
-      if (node.expression === type) {
-        if (elements === position) return node
-        elements++
-      }
-    }
-  }
-
-  /**
-   * Retrieves the declared type of a Node's next value token.
-   * 
-   * @param {string | number} idOrName - Node index or content to search.
-   * @param {Node[]} [nodes=this.nodes] - Optional node array to search.
-   * @param {?string} [input] - Optional input string context.
-   * @returns {ContentTypes | undefined} The content type code if present.
-   */
-  getType(idOrName: string | number, nodes: Node[] = this.nodes, input?: string): any {
-    const getTypeById = (id: number) => {
-      const valueNode = nodes[id]
-      if (!valueNode || valueNode.expression !== InternalExpression.Value) return
-
-      return valueNode.type
-    }
-
-    switch (typeof idOrName) {
-    case 'string': {
-      const result = this.getNode(idOrName, nodes, input)
-      if (!result) return
-
-      return getTypeById(result.id)
-    }
-    case 'number': {
-      return getTypeById(idOrName)
-    }
-    }
-  }
-
-  /**
-   * Extracts raw content string from a Node's start/end positions.
-   * 
-   * @param {Node} node - The Node to extract from.
-   * @param {string} [input=this.input] - Optional input string context.
-   * @returns {string} The substring for the node.
-   */
-  getContent (node: Node, input: string = this.input): string {
-    return input.slice(node.start, node.end)
-  }
-
-  /**
-   * Retrieves the raw value string following a parameter or variable Node.
-   * 
-   * @param {string | number} idOrName - Node index or content to search.
-   * @param {Node[]} [nodes=this.nodes] - Optional node array to search.
-   * @param {?string} [input] - Optional input string context.
-   * @returns {string | undefined} The raw value, or undefined if absent.
-   */
-  getValue(idOrName: string | number, nodes: Node[] = this.nodes, input?: string): string | undefined {
-    const property = this.getNode(idOrName, nodes, input)
-    if (
-      !property
-      || ![InternalExpression.Parameter, InternalExpression.Variable].includes(property.expression as InternalExpression)
-    ) return
-
-    const value = this.getNode(property.id + 2, nodes, input)
-    if (
-      !value
-      || value.expression !== InternalExpression.Value
-    ) return
-
-    return this.getContent(value, input)
-  }
-
-  /**
-   * Checks if any errors were found during parsing.
-   * @returns {boolean} True if errors exist.
-   */
-  hasErrors(errors: ErrorLog[] = this.errors): boolean {
-    return errors.length > 0
-  }
-
-  /**
-   * Returns a formatted string of all parsing errors.
-   * @returns {string} The formatted error report.
-   */
-  displayErrors(errors: ErrorLog[] = this.errors): string {
-    if (!this.hasErrors(errors)) return 'No errors found.'
-    return errors.map(e => e.display(this.input)).join('\n\n')
-  }
-
-  /**
-   * Prints a formatted table of nodes and colors the path output.
-   * 
-   * @param {Node[]} [node=this.nodes] - Optional node array to display.
-   * @param {string} [input=this.input] - Optional input context for coloring.
-   */
-  display(node: Node[] = this.nodes, input: string = this.input): string {
-    type Row = {
-      idx: string;
-      symbol: string;
-      expr: string;
-      type: string;
-      start: string;
-      end: string;
-    };
-
-    // Build raw rows data
-    const rows: Row[] = node.map((node, i) => {
-      const raw = input.slice(node.start, node.end)
-      const sym = colorize(raw, expressionKeyColorMap[node.expression] ?? AnsiColor.White)
-      const expr = RawTokens[node.expression] ?? 'Unknown'
-      const typ = RawTokens[node.type] ?? ''
-
-      return {
-        idx: String(i + 1),
-        symbol: sym,
-        expr,
-        type: typ,
-        start: String(node.start),
-        end: String(node.end),
-      }
-    })
-
-    // Define headers
-    const headers = {
-      idx: 'Id',
-      symbol: 'Symbol',
-      expr: 'Expression',
-      type: 'Type',
-      start: 'Start',
-      end: 'End',
-    } as const
-
-    return renderTable(rows, headers) + '\n\nPath: ' + colorizePath(input, node)
-  }
-
-  static parser (input: string, errors: ErrorLog[]) {
-    const nodes: Node[] = []
-    const foundExpressions = new Set<number>()
-    let state: AllValues = InternalExpression.Null
-    let tokenStart = 0
-    let tokenEnd = 0
-
-    for (let index = 0; index < input.length; index++) {
-      const code = input.charCodeAt(index)
-      const next = input.charCodeAt(index + 1)
-      const id = nodes.length
-      const c = input.charAt(index)
-
-      if (
-        state === InternalExpression.Void
-          && foundExpressions.has(InternalExpression.Ellipsis)
-          && next !== undefined
-      ) {
-        errors.push(new ErrorLog(
-          'E_UNEXPECTED_TOKEN', 
-          'Unexpected token after catch-all \'[]\'. A catch-all must be the final element.',
-          index + 1,
-          input.length
-        ))
-        break
-      }
-
-      if (
-        (state === InternalExpression.Slug || state === InternalExpression.Ellipsis)
-        && (delimitersValues.includes(code) && code !== Delimiters.RightBracket)
-      ) {
-        errors.push(new ErrorLog(
-          'E_INVALID_SYNTAX',
-          `Unexpected delimiter '${c}' inside a dynamic segment '[]'.`,
-          index,
-          index + 1
-        ))
-      }
-
-      if (
-        state === InternalExpression.Path
-        && code === Delimiters.Slash
-        && (state as unknown as OriginExpression) !== OriginExpression.Hostname) {
-        errors.push(new ErrorLog(
-          'E_CONSECUTIVE_SLASHES',
-          'Consecutive slashes are not allowed in the path.',
-          index,
-          index + 1
-        ))
-      }
-
-      if (!RawTokens[code]) {
-        const isDelimiter = !next
-          || delimitersValues.includes(next)
-          || next === EncodingSymbols.Equal
-          // for LeftBracket
-          || state === InternalExpression.Ellipsis
-
-        if (
-          (state === InternalExpression.Path || state === InternalExpression.Variable)
-                  && (
-                    next === Delimiters.Ampersand
-                    || next === Delimiters.Colon
-                    || (state !== InternalExpression.Variable && EncodingSymbols.Equal === next)
-                  )
-        ) {
-          errors.push(new ErrorLog(
-            'E_INVALID_SYNTAX',
-            `Unexpected token '${input[index+1]}'. A path segment or variable cannot be followed by '${RawTokens[next]}'.`,
-            index + 1,
-            index + 2
-          ))
-        }
-
-        if (state === InternalExpression.Parameter
-            && (
-              next === Delimiters.Colon
-              || next === Delimiters.Slash
-              || next === Delimiters.Query
-            )) {
-          errors.push(new ErrorLog(
-            'E_INVALID_SYNTAX',
-            `Unexpected token '${input[index+1]}'. A search parameter cannot be followed by '${RawTokens[next]}'.`,
-            index + 1,
-            index + 2
-          ))
-        }
-
-        if (!isDelimiter) continue
-        foundExpressions.add(state)
-        
-        switch (state) {
-        case OriginExpression.Port:
-        case InternalExpression.Fragment:
-        case InternalExpression.Path:
-        case InternalExpression.Slug:
-        case InternalExpression.Variable: {
-          nodes.push(new Node(id, state, tokenStart, index + 1))
-          state = InternalExpression.Null
-          continue
-        }
-        case InternalExpression.Null: {
-          const content = input.slice(tokenEnd, index + 1)
-          tokenEnd = tokenEnd <= tokenStart ? (index + 1) : tokenEnd
-
-          switch (content) {
-          case 'http': {
-            nodes.push(new Node(id, OriginExpression.Protocol, tokenStart, tokenEnd))
-            break
-          }
-          case 'https': {
-            nodes.push(new Node(id, OriginExpression.Protocol, tokenStart, tokenEnd))
-            break
-          }
-          default: {
-            if (next !== Delimiters.Colon && next !== Delimiters.Slash) {
-              nodes.push(new Node(id, InternalExpression.Parameter, tokenStart, tokenEnd))
-              continue
-            }
-            nodes.push(new Node(id, OriginExpression.Hostname, tokenStart, tokenEnd))
-
-            if (next === Delimiters.Colon) {
-              // ignore : of localhost:3000
-              index += 2
-              tokenStart = index
-              state = OriginExpression.Port
-            }
-
-            continue
-          }
-          }
-          // ignore :// of http://localhost
-          index += 4
-          tokenStart = index
-          state = OriginExpression.Hostname
-          continue
-        }
-        case OriginExpression.Hostname: {
-          nodes.push(new Node(id, state, tokenStart, index + 1))
-
-          if (next === Delimiters.Colon) {
-            // ignore : of localhost:3000
-            index += 2
-            tokenStart = index
-            state = OriginExpression.Port
-            continue
-          }
-          
-          state = InternalExpression.Null
-          continue
-        }
-        case InternalExpression.Ellipsis: {
-          if (code !== CatchAllExpression.Point) {
-            foundExpressions.delete(state)
-            state = InternalExpression.Slug
-            continue
-          }
-
-          const ellipsis = input.substring(index, index + 3)
-          if (ellipsis !== '...') {
-            errors.push(new ErrorLog(
-              'E_INVALID_CATCH_ALL',
-              `Invalid catch-all syntax. Expected '[...]' but found an incomplete sequence near '${ellipsis}'.`,
-              tokenStart,
-              index + ellipsis.length
-            ))
-            index += ellipsis.length -1
-            state = InternalExpression.Void
-            continue
-          }
-          
-          index += 2
-          nodes.push(new Node(id, state, tokenStart, index + 1))
-          tokenStart = index + 1
-          state = InternalExpression.Slug
-          continue
-        }
-        default: {
-          tokenEnd = tokenEnd <= tokenStart ? (index + 1) : tokenEnd
-          const content = input.slice(tokenStart, tokenEnd)
-
-          switch (content) {
-          case 'number': {
-            nodes.push(new Node(id, state, tokenStart, tokenEnd, ContentTypes.Number))
-            break
-          }
-          case 'boolean': {
-            nodes.push(new Node(id, state, tokenStart, tokenEnd, ContentTypes.Boolean))
-            break
-          }
-          case 'string': {
-            nodes.push(new Node(id, state, tokenStart, tokenEnd, ContentTypes.String))
-            break
-          }
-          case 'array': {
-            nodes.push(new Node(id, state, tokenStart, tokenEnd, ContentTypes.Array))
-            break
-          }
-          default: {
-            nodes.push(new Node(id, state, tokenStart, tokenEnd))
-            break
-          }
-          }
-
-          state = InternalExpression.Null
-          continue
-        }
-        }
-      }
-
-      switch (code as AllValues) {
-      case Delimiters.Hash: /* # */ {
-        state = InternalExpression.Fragment
-        break
-      }
-      case Delimiters.Slash: /* / */ {
-        state = InternalExpression.Path
-        break
-      }
-      case Delimiters.Ampersand: /* & */ {
-        state = InternalExpression.Parameter
-        break
-      }
-      case Delimiters.Semicolon: /* ; */ {
-        state = InternalExpression.Parameter
-        break
-      }
-      case Delimiters.Query: /* ? */ {
-        state = InternalExpression.Parameter
-        break
-      }
-      case Delimiters.Colon: /* : */ {
-        state = InternalExpression.Variable
-        break
-      }
-      case Delimiters.Asterisk: /* * */ {
-        state = InternalExpression.Void
-        break
-      }
-      case Delimiters.LeftBracket: /* [ */ {
-        state = InternalExpression.Ellipsis
-        break
-      }
-      case Delimiters.RightBracket: /* ] */ {
-        state = InternalExpression.Null
-        break
-      }
-      case EncodingSymbols.Equal: /* = */ {
-        state = InternalExpression.Value
-        break
-      }
-      }
-
-      nodes.push(new Node(id, code, index, index + 1))
-      tokenStart = index + 1
-      foundExpressions.add(state)
-    }
-
-    return { nodes, expressions: foundExpressions }
   }
 
   withParser<P extends Analyze<Path, TypedPath, any>>(parser: P): Analyze<Path, TypedPath, P> {

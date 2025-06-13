@@ -175,7 +175,7 @@ describe('Analyze: Path Parameter Type Casting', () => {
       const template = new Analyze('/users/:id=number')
       const instance = new Analyze('/users/100', template)
       
-      const display = instance.display()
+      const display = instance.ast.display()
       // Remove ANSI codes to check plain text content
       const plainDisplay = display.replace(/\u001b\[[0-9;]*m/g, '')
       expect(plainDisplay).toContain('/users/100')
@@ -188,7 +188,7 @@ describe('Analyze: Path Parameter Type Casting', () => {
       const instance = new Analyze('/api/2/status/true', template)
       
       const params = instance.getParams()
-      const display = instance.display()
+      const display = instance.ast.display()
       
       expect(params).toEqual({ version: 2, active: true })
       // Remove ANSI codes to check plain text content
