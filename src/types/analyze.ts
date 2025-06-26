@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // Mapeia uma string 'number', 'boolean', 'string' ou listas '1,2,3' para o tipo correspondente
-type TypeMap<T extends string> =
+export type TypeMap<T extends string> =
   T extends 'string'   ? string :
   T extends 'number'   ? number :
   T extends 'boolean'  ? boolean :
@@ -10,7 +10,7 @@ type TypeMap<T extends string> =
   string
 
 // Divide S por um delimitador D em tupla de strings
-type Split<S extends string, D extends string> =
+export type Split<S extends string, D extends string> =
   S extends `${infer Head}${D}${infer Tail}`
     ? [Head, ...Split<Tail, D>]
     : S extends '' 
@@ -18,14 +18,14 @@ type Split<S extends string, D extends string> =
       : [S]
 
 // Remove a parte de query ('?…') e fragment ('#…'), e a barra inicial
-type ExtractPath<S extends string> =
+export type ExtractPath<S extends string> =
   S extends `${infer P}?${string}` ? P :
   S extends `${infer P}#${string}` ? P :
   S extends `/${infer Rest}`     ? Rest
   : S
 
 // Extrai só a parte de query, sem a fragment
-type ExtractQuery<S extends string> =
+export type ExtractQuery<S extends string> =
   S extends `${string}?${infer Q}` 
     ? Q extends `${infer QnoFrag}#${string}` 
       ? QnoFrag 
@@ -33,11 +33,11 @@ type ExtractQuery<S extends string> =
     : ''
 
 // Extrai só a parte de fragment
-type ExtractFrag<S extends string> =
+export type ExtractFrag<S extends string> =
   S extends `${string}#${infer F}` ? F : ''
 
 // Constrói o objeto params a partir dos segmentos ":chave=tipo"
-type ParseParams<S extends string> = {
+export type ParseParams<S extends string> = {
   [Seg in Split<ExtractPath<S>, '/'>[number] as
     Seg extends `:${infer Key}=${infer _T}` ? Key : 
     Seg extends `:${infer Key}` ? Key : never
@@ -49,7 +49,7 @@ type ParseParams<S extends string> = {
 }
 
 // Constrói o objeto searchParams, aceitando "chave=valor" ou só "chave"
-type ParseSearch<S extends string> = {
+export type ParseSearch<S extends string> = {
   [Param in Split<ExtractQuery<S>, '&'>[number] as
     Param extends `${infer Key}=${infer _V}` ? Key : Param
   ]:
@@ -59,7 +59,7 @@ type ParseSearch<S extends string> = {
 }
 
 // Constrói o objeto fragment, que sempre será string
-type ParseFragment<S extends string> =
+export type ParseFragment<S extends string> =
   ExtractFrag<S> extends ''
     // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     ? {}

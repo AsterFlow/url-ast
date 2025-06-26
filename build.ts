@@ -1,4 +1,3 @@
-// build.ts
 import { build, type Options } from 'tsup'
 import { writeFile } from 'fs/promises'
 import { generateDtsBundle } from 'dts-bundle-generator'
