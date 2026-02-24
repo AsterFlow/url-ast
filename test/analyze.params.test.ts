@@ -18,6 +18,17 @@ describe('Analyze: Parameters and Fragments', () => {
         const instance = new Analyze('/user/123/active/true', template)
         expect(instance.getParams()).toEqual({ id: 123, status: true })
       })
+
+      it('should extract params containing special characters in path segments', () => {
+        const template = new Analyze('/:config/:min=number/:max=number/:provider')
+        const instance = new Analyze('/do~´n\',-t/1/1/example', template)
+        expect(instance.getParams()).toEqual({
+          config: 'do~´n\',-t',
+          min: 1,
+          max: 1,
+          provider: 'example'
+        })
+      })
     })
   })
 
@@ -46,6 +57,14 @@ describe('Analyze: Parameters and Fragments', () => {
           active: false,
           tags: ['a', 'b', 'c'],
           name: 'test'
+        })
+      })
+
+      it('should extract and cast search params with special characters', () => {
+        const template = new Analyze('?config=string')
+        const instance = new Analyze('?config=do~´n\',-t', template)
+        expect(instance.getSearchParams()).toEqual({
+          config: 'do~´n\',-t'
         })
       })
     })
