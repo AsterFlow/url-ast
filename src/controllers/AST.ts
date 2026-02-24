@@ -185,6 +185,17 @@ export class AST<const Path extends string>{
       const next = input.charCodeAt(index + 1)
       const id = nodes.length
       const c = input.charAt(index)
+      const isGrammarToken =
+        code === Delimiters.Hash
+        || code === Delimiters.Slash
+        || code === Delimiters.Ampersand
+        || code === Delimiters.Semicolon
+        || code === Delimiters.Query
+        || code === Delimiters.Colon
+        || code === Delimiters.Asterisk
+        || code === Delimiters.LeftBracket
+        || code === Delimiters.RightBracket
+        || code === EncodingSymbols.Equal
 
       if (
         state === InternalExpression.Void
@@ -224,7 +235,7 @@ export class AST<const Path extends string>{
         ))
       }
 
-      if (!RawTokens[code]) {
+      if (!isGrammarToken) {
         const isDelimiter = !next
           || delimitersValues.includes(next)
           || next === EncodingSymbols.Equal
