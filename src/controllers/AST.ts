@@ -227,7 +227,7 @@ export class AST<const Path extends string>{
 
       if (!isGrammarToken) {
         const isDelimiter = !next
-          || delimitersValues.includes(next)
+          || (state === InternalExpression.Slug ? next === Delimiters.RightBracket : delimitersValues.includes(next))
           || next === EncodingSymbols.Equal
           // for LeftBracket
           || state === InternalExpression.Ellipsis
