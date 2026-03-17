@@ -5,23 +5,23 @@ export class Node {
 
   constructor(
     /**
-     * @size 1 Byte
+     * 1 Byte
      */
     public readonly id: number,
     /**
-     * @size 1 Byte
+     * 1 Byte
      */
     public expression: AllValues = InternalExpression.Null,
     /**
-     * @size 2 Byte
+     * 2 Bytes
      */
     public start: number = 0,
     /**
-     * @size 2 Byte
+     * 2 Bytes
      */
     public end: number = 0,
     /**
-     * @size 1 Byte
+     * 1 Byte
      */
     public type: ContentTypes | InternalExpression.Null = 
     ![InternalExpression.Parameter, InternalExpression.Value].includes(this.expression as InternalExpression)
@@ -62,7 +62,7 @@ export class Node {
       const expression = buffer.readUInt8(off + 1) as AllValues
       const start = buffer.readUInt16LE(off + 2)
       const end = buffer.readUInt16LE(off + 4)
-      const type = buffer.readUInt16LE(off + 6)
+      const type = buffer.readUInt8(off + 6)
   
       nodes.push(new Node(id, expression, start, end, type))
     }
