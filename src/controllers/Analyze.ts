@@ -5,7 +5,6 @@ import { ContentTypes, Delimiters, delimitersValues, EncodingSymbols, InternalEx
 import decodeURIComponentUTF8 from '../utils/decodeURL'
 import { AST } from './AST'
 import { ErrorLog } from './Error'
-import { Node } from './Node'
 
 /**
  * Parses and analyzes a URL template or real URL, extracting parameters, variables,
