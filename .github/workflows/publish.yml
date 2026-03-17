@@ -1,0 +1,63 @@
+name: Publish to NPM
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 1.0.0). If empty, uses package.json version.'
+        required: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    permissions:
+      contents: read
+      id-token: write # Required for OIDC and provenance
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run Tests
+        run: bun run test
+
+      - name: Build Project
+        run: bun run build
+
+      - name: Set Version from Tag
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+            VERSION="${TAG_NAME#v}"
+          fi
+
+          if [ -n "$VERSION" ]; then
+            jq ".version = \"$VERSION\"" package.json > package.json.tmp && mv package.json.tmp package.json
+          fi
+
+      - name: Publish Original Package (url-ast)
+        run: npm publish --access public --provenance
+
+      - name: Publish Alias Package (@asterflow/url-parser)
+        run: |
+          # Change name to @asterflow/url-parser
+          jq '.name = "@asterflow/url-parser"' package.json > package.json.tmp && mv package.json.tmp package.json
+          npm publish --access public --provenance
