@@ -184,7 +184,7 @@ export class AST<const Path extends string>{
       const code = input.charCodeAt(index)
       const next = input.charCodeAt(index + 1)
       const id = nodes.length
-      const c = input.charAt(index)
+      const char = input.charAt(index)
       const isGrammarToken =
         code === Delimiters.Hash
         || code === Delimiters.Slash
@@ -217,7 +217,7 @@ export class AST<const Path extends string>{
       ) {
         errors.push(new ErrorLog(
           'E_INVALID_SYNTAX',
-          `Unexpected delimiter '${c}' inside a dynamic segment '[]'.`,
+          `Unexpected delimiter '${char}' inside a dynamic segment '[]'.`,
           index,
           index + 1
         ))
@@ -264,9 +264,12 @@ export class AST<const Path extends string>{
               || next === Delimiters.Slash
               || next === Delimiters.Query
             )) {
+          const isColon = next === Delimiters.Colon
           errors.push(new ErrorLog(
             'E_INVALID_SYNTAX',
-            `Unexpected token '${input[index+1]}'. A search parameter cannot be followed by '${RawTokens[next]}'.`,
+            isColon 
+              ? 'A search parameter cannot be followed by a variable (\':\'). Use \'=\' to define a type or value.'
+              : `Unexpected token '${input[index+1]}'. A search parameter cannot be followed by '${RawTokens[next]}'.`,
             index + 1,
             index + 2
           ))
