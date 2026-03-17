@@ -1,6 +1,7 @@
 # Development folders
 /node_modules
 /test
+/docs
 /src
 /.vscode
 /benchmarks
