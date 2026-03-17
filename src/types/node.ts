@@ -94,7 +94,12 @@ export type AllValues =
   | InternalExpression
   | OriginExpression
 
-export const delimitersValues = Object.values(Delimiters).filter((v) => typeof v === 'number') as number[]
+export const delimitersValues = Object.values(Delimiters).filter((v): v is number => typeof v === 'number')
+export const grammarTokens = [
+  ...delimitersValues,
+  ...Object.values(EncodingSymbols)
+].filter((v): v is number => typeof v === 'number')
+
 export const RawTokens = {
   ...Delimiters,
   ...EncodingSymbols,

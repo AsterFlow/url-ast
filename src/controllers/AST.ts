@@ -1,4 +1,4 @@
-import { CatchAllExpression, ContentTypes, Delimiters, delimitersValues, EncodingSymbols, InternalExpression, OriginExpression, RawTokens, type AllValues } from '../types/node'
+import { CatchAllExpression, ContentTypes, Delimiters, delimitersValues, EncodingSymbols, grammarTokens, InternalExpression, OriginExpression, RawTokens, type AllValues } from '../types/node'
 import { AnsiColor, colorize, expressionKeyColorMap } from '../utils/colors'
 import { colorizePath, renderTable } from '../utils/table'
 import { ErrorLog } from './Error'
@@ -185,17 +185,7 @@ export class AST<const Path extends string>{
       const next = input.charCodeAt(index + 1)
       const id = nodes.length
       const char = input.charAt(index)
-      const isGrammarToken =
-        code === Delimiters.Hash
-        || code === Delimiters.Slash
-        || code === Delimiters.Ampersand
-        || code === Delimiters.Semicolon
-        || code === Delimiters.Query
-        || code === Delimiters.Colon
-        || code === Delimiters.Asterisk
-        || code === Delimiters.LeftBracket
-        || code === Delimiters.RightBracket
-        || code === EncodingSymbols.Equal
+      const isGrammarToken = grammarTokens.includes(code)
 
       if (
         state === InternalExpression.Void
