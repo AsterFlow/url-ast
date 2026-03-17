@@ -3,7 +3,7 @@
 import { expect, describe, it } from 'bun:test'
 import { Analyze } from '../src'
 
-describe('Analyze: Origin and Base Path', () => {
+describe('Controller: Analyze (Origin)', () => {
   describe('getProtocol()', () => {
     it('should extract "http" from a URL', () => {
       const analyzer = new Analyze('http://example.com/path')
@@ -15,7 +15,7 @@ describe('Analyze: Origin and Base Path', () => {
       expect(analyzer.getProtocol()).toBe('https')
     })
 
-    it('should return undefined for a path-only URL', () => {
+    it('should return undefined for protocol when using a path-only URL', () => {
       const analyzer = new Analyze('/some/path/here')
       expect(analyzer.getProtocol()).toBeUndefined()
     })
@@ -32,7 +32,7 @@ describe('Analyze: Origin and Base Path', () => {
       expect(analyzer.getHostname()).toBe('api.v1.example.co.uk')
     })
 
-    it('should return undefined for a path-only URL', () => {
+    it('should return undefined for hostname when using a path-only URL', () => {
       const analyzer = new Analyze('/path/only')
       expect(analyzer.getHostname()).toBeUndefined()
     })

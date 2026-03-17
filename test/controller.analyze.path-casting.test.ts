@@ -3,7 +3,7 @@
 import { expect, describe, it } from 'bun:test'
 import { Analyze } from '../src'
 
-describe('Analyze: Path Parameter Type Casting', () => {
+describe('Controller: Analyze (Path Casting)', () => {
   describe('Number Casting', () => {
     it('should cast path parameter to number', () => {
       const template = new Analyze('/users/:id=number')

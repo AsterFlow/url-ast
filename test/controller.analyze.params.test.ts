@@ -3,7 +3,7 @@
 import { expect, describe, it } from 'bun:test'
 import { Analyze } from '../src'
 
-describe('Analyze: Parameters and Fragments', () => {
+describe('Controller: Analyze (Parameters and Fragments)', () => {
   describe('getParams() - Path Parameters', () => {
     describe('Template Mode', () => {
       it('should return an array of param names', () => {
@@ -29,6 +29,20 @@ describe('Analyze: Parameters and Fragments', () => {
           provider: 'example'
         })
       })
+
+      it('should extract params with base parser having mixed static and dynamic segments', () => {
+        const template = new Analyze('/users/:id/posts/:postId')
+        const instance = new Analyze('/users/42/posts/100', template)
+        const params = instance.getParams()
+        expect(params).toEqual({ id: '42', postId: '100' })
+      })
+
+      it('should return empty object when nodeSlash is missing or not a path', () => {
+        const template = new Analyze('/:id')
+        const instance = new Analyze('/', template)
+        const params = instance.getParams()
+        expect(params).toEqual({})
+      })
     })
   })
 
@@ -45,6 +59,12 @@ describe('Analyze: Parameters and Fragments', () => {
       it('should handle duplicate keys by creating an array', () => {
         const analyzer = new Analyze('?tag=news&tag=tech')
         expect(analyzer.getSearchParams().get('tag')).toEqual(['news', 'tech'])
+      })
+
+      it('should handle multiple occurrences (3+)', () => {
+        const analyzer = new Analyze('?a=1&a=2&a=3')
+        const searchParams = analyzer.getSearchParams()
+        expect(searchParams.get('a')).toEqual(['1', '2', '3'])
       })
     })
 
@@ -67,6 +87,20 @@ describe('Analyze: Parameters and Fragments', () => {
           config: 'do~´n\',-t'
         })
       })
+
+      it('should handle base parser and missing values', () => {
+        const template = new Analyze('?q:string')
+        const instance = new Analyze('?other=val', template)
+        const searchParams = instance.getSearchParams()
+        expect(Object.keys(searchParams)).not.toContain('q')
+      })
+
+      it('should cast value with Array type', () => {
+        const template = new Analyze('?tags=array')
+        const instance = new Analyze('?tags=a,b,c', template)
+        const params = instance.getSearchParams() as any
+        expect(params.tags).toEqual(['a', 'b', 'c'])
+      })
     })
   })
 
@@ -84,6 +118,37 @@ describe('Analyze: Parameters and Fragments', () => {
         const instance = new Analyze('/page#actualValue', template)
         expect(instance.getFragment()).toEqual({ sectionKey: 'actualValue' })
       })
+
+      it('should handle missing fragment with base parser', () => {
+        const template = new Analyze('/#section')
+        const instance = new Analyze('/', template)
+        const fragment = instance.getFragment()
+        expect(fragment).toEqual({})
+        
+        const template2 = new Analyze('/')
+        const instance2 = new Analyze('/#section', template2)
+        expect(instance2.getFragment()).toEqual({})
+      })
+    })
+  })
+
+  describe('Fluent setParser API', () => {
+    it('should extract and cast params using late-bound parser', () => {
+      const template = new Analyze('/user/:id=number')
+      const instance = new Analyze('/user/123').setParser(template)
+      expect(instance.getParams()).toEqual({ id: 123 })
+    })
+
+    it('should extract and cast search params using late-bound parser', () => {
+      const template = new Analyze('?active=boolean')
+      const instance = new Analyze('?active=true').setParser(template)
+      expect(instance.getSearchParams()).toEqual({ active: true })
+    })
+
+    it('should extract fragment using late-bound parser', () => {
+      const template = new Analyze('#sectionKey')
+      const instance = new Analyze('#actualValue').setParser(template)
+      expect(instance.getFragment()).toEqual({ sectionKey: 'actualValue' })
     })
   })
 })

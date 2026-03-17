@@ -3,7 +3,7 @@
 import { expect, describe, it } from 'bun:test'
 import { Analyze } from '../src'
 
-describe('Analyze: Static Props and Dynamic Routes', () => {
+describe('Controller: Analyze (Static Props)', () => {
   describe('getStaticProps()', () => {
     it('should return an empty object if no base parser is provided', () => {
       const analyzer = new Analyze('/users/123')
@@ -44,6 +44,22 @@ describe('Analyze: Static Props and Dynamic Routes', () => {
       const template = new Analyze('/users/[id]/settings')
       const instance = new Analyze('/users/123', template)
       expect(instance.getStaticProps()).toEqual({})
+    })
+
+    it('should handle getStaticProps branches for catch-all', () => {
+      const template = new Analyze('/[...slug]')
+      const instance = new Analyze('/a/b/c', template)
+      expect(instance.getStaticProps()).toEqual({ slug: ['a', 'b', 'c'] })
+
+      const template2 = new Analyze('/[id]')
+      const instance2 = new Analyze('/a/b', template2) // length mismatch
+      expect(instance2.getStaticProps()).toEqual({})
+    })
+
+    it('should extract catch-all and extra segments', () => {
+      const template = new Analyze('/docs/[...slug]/edit')
+      const instance = new Analyze('/docs/a/b/edit', template)
+      expect(instance.getStaticProps()).toEqual({ slug: ['a', 'b'] })
     })
   })
 })
