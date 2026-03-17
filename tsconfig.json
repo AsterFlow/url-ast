@@ -29,5 +29,5 @@
 
     "types": ["bun"]
   },
-  "include": ["examples", "src", "test", "build.ts"],
+  "include": ["examples", "src", "test", "build.ts", "publish.ts"],
 }
