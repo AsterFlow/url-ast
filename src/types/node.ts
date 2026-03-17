@@ -62,21 +62,21 @@ export enum InternalExpression {
   Slug = 243,
   Ellipsis = 242,
   /**
-   * Essa expressão é utilizada no Delimitador Asterisk (*)
+   * This expression is used in the Asterisk (*) Delimiter
    */
   Void = 250,
   Path = 251,
   Variable = 252,
   /**
-   * Essa expressão é utilizada no Delimitador Hash (#)
+   * This expression is used in the Hash (#) Delimiter
    */
   Fragment = 253,
   /**
-   * Essa expressão é utilizada após os Delimitadores Query (?), Ampersand (&) e Semicolon (;)
+   * This expression is used after the Query (?), Ampersand (&), and Semicolon (;) Delimiters
    */
   Parameter = 254,
   /**
-   * Essa expressão é utilizada após os Delimitador Equal (=)
+   * This expression is used after the Equal (=) Delimiter
    */
   Value = 255,
 }

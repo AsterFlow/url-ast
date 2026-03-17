@@ -1,15 +1,19 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// Mapeia uma string 'number', 'boolean', 'string' ou listas '1,2,3' para o tipo correspondente
+/**
+ * Maps a 'number', 'boolean', 'string' string or '1,2,3' lists to the corresponding type
+ */
 export type TypeMap<T extends string> =
   T extends 'string'   ? string :
   T extends 'number'   ? number :
   T extends 'boolean'  ? boolean :
   T extends 'array'    ? string[] :
-  // Se for uma lista "a,b,c" ou "1,2,3", pega o primeiro elemento e faz array
+  // If it's a list "a,b,c" or "1,2,3", get the first element and make it an array
   T extends `${infer First},${infer _Rest}` ? TypeMap<First>[] :
   string
 
-// Divide S por um delimitador D em tupla de strings
+/**
+ * Splits S by a delimiter D into a tuple of strings
+ */
 export type Split<S extends string, D extends string> =
   S extends `${infer Head}${D}${infer Tail}`
     ? [Head, ...Split<Tail, D>]
@@ -17,14 +21,18 @@ export type Split<S extends string, D extends string> =
       ? []
       : [S]
 
-// Remove a parte de query ('?…') e fragment ('#…'), e a barra inicial
+/**
+ * Removes the query ('?…') and fragment ('#…') part, and the leading slash
+ */
 export type ExtractPath<S extends string> =
   S extends `${infer P}?${string}` ? P :
   S extends `${infer P}#${string}` ? P :
   S extends `/${infer Rest}`     ? Rest
   : S
 
-// Extrai só a parte de query, sem a fragment
+/**
+ * Extracts only the query part, without the fragment
+ */
 export type ExtractQuery<S extends string> =
   S extends `${string}?${infer Q}` 
     ? Q extends `${infer QnoFrag}#${string}` 
@@ -32,11 +40,15 @@ export type ExtractQuery<S extends string> =
       : Q
     : ''
 
-// Extrai só a parte de fragment
+/**
+ * Extracts only the fragment part
+ */
 export type ExtractFrag<S extends string> =
   S extends `${string}#${infer F}` ? F : ''
 
-// Constrói o objeto params a partir dos segmentos ":chave=tipo"
+/**
+ * Constructs the params object from the ":key=type" segments
+ */
 export type ParseParams<S extends string> = {
   [Seg in Split<ExtractPath<S>, '/'>[number] as
     Seg extends `:${infer Key}=${infer _T}` ? Key : 
@@ -48,7 +60,9 @@ export type ParseParams<S extends string> = {
     : never
 }
 
-// Constrói o objeto searchParams, aceitando "chave=valor" ou só "chave"
+/**
+ * Constructs the searchParams object, accepting "key=value" or just "key"
+ */
 export type ParseSearch<S extends string> = {
   [Param in Split<ExtractQuery<S>, '&'>[number] as
     Param extends `${infer Key}=${infer _V}` ? Key : Param
@@ -58,14 +72,18 @@ export type ParseSearch<S extends string> = {
       : string
 }
 
-// Constrói o objeto fragment, que sempre será string
+/**
+ * Constructs the fragment object, which will always be a string
+ */
 export type ParseFragment<S extends string> =
   ExtractFrag<S> extends ''
     // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     ? {}
     : { [K in ExtractFrag<S>]: string }
 
-// Tipo final que junta tudo
+/**
+ * Final type that joins everything
+ */
 export type ParsePath<S extends string> = {
   params:       ParseParams<S>
   searchParams: ParseSearch<S>
