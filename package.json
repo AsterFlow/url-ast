@@ -60,10 +60,7 @@
     "test:coverage": "bun test --coverage",
     "lint": "eslint -c eslint.config.js --fix",
     "type-check": "tsc --noEmit",
-    "build": "bun run build.ts",
-    "test:publish": "npm pack --dry-run && echo '\n✅ Package is ready to publish!'",
-    "pack": "npm pack",
-    "publish:dry": "npm publish --dry-run"
+    "build": "bun run build.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
