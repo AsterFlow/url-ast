@@ -26,5 +26,8 @@
 
     // Some stricter flags (disabled by default)
     "noPropertyAccessFromIndexSignature": false,
-  }
+
+    "types": ["bun"]
+  },
+  "include": ["examples", "src", "test", "build.ts"],
 }
