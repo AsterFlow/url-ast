@@ -2,6 +2,7 @@
 
 # url-ast
 
+[![npm version](https://img.shields.io/npm/v/url-ast?style=for-the-badge&colorA=302D41&colorB=f9e2af&logo=npm)](https://www.npmjs.com/package/url-ast)
 ![license-info](https://img.shields.io/github/license/AsterFlow/url-ast?style=for-the-badge&colorA=302D41&colorB=f9e2af&logoColor=f9e2af)
 ![stars-info](https://img.shields.io/github/stars/AsterFlow/url-ast?colorA=302D41&colorB=f9e2af&style=for-the-badge)
 
@@ -37,19 +38,19 @@ url-ast is a specialized module for analyzing and manipulating URLs using an Abs
 
 ## 📦 Installation
 
+You can install **url-ast** using your preferred package manager:
+
 ```bash
-# Using npm
-npm install url-ast
-
-# Using bun
 bun add url-ast
-
-# Using yarn
-yarn add url-ast
-
-# Using pnpm
-pnpm add url-ast
 ```
+
+*(Works with `npm`, `yarn`, or `pnpm` as well)*
+
+-----
+
+## 📚 Examples
+
+For more detailed examples on how to use all the features of **url-ast**, check out our [examples directory](https://github.com/AsterFlow/url-ast/tree/main/examples).
 
 -----
 
@@ -64,123 +65,19 @@ import { Analyze } from 'url-ast'
 const template = new Analyze('/api/users/:id=number/posts/:postId=string?sort=boolean&tags=array')
 
 // Parse a real URL using the template
-const url = new Analyze('/api/users/123/posts/hello-world?sort=true&tags=tech,typescript', template)
+const analyzer = new Analyze('/api/users/123/posts/hello-world?sort=true&tags=tech,typescript', template)
 
 // Get typed path parameters
-console.log(url.getParams())
+console.log(analyzer.getParams())
 // { id: 123, postId: 'hello-world' }
 
 // Get typed search parameters  
-console.log(url.getSearchParams())
+console.log(analyzer.getSearchParams())
 // { sort: true, tags: ['tech', 'typescript'] }
 
 // Display visual analysis
-console.log(url.display())
-// Shows detailed AST structure with colored output
+console.log(analyzer.ast.display())
 ```
-
------
-
-## 🎯 Type Casting System
-
-The parser supports automatic type casting for path and query parameters, providing type-safe parameter extraction.
-
-### Supported Types
-
-| Type | Syntax | Description | Example |
-| :--- | :--- | :--- | :--- |
-| **Number** | `:param=number` | Converts to numeric values (integers, decimals, negatives) | `123`, `-42`, `99.99` |
-| **Boolean** | `:param=boolean` | Converts to boolean (`true`/`false`, `1`/`0`, case-insensitive) | `true`, `false`, `1`, `0` |
-| **String** | `:param=string` or `:param` | Default type, keeps as string | `hello-world`, `user_123` |
-| **Array** | `:param=array` | Converts comma-separated values to array | `red,green,blue` → `['red', 'green', 'blue']` |
-
-### Type Casting Examples
-
-**Number Casting:**
-```typescript
-const template = new Analyze('/users/:id=number/price/:amount=number')
-const instance = new Analyze('/users/100/price/99.99', template)
-
-console.log(instance.getParams()) 
-// { id: 100, amount: 99.99 }
-console.log(typeof instance.getParams().id) // "number"
-```
-
-**Boolean Casting:**
-```typescript
-const template = new Analyze('/status/:active=boolean')
-const instance = new Analyze('/status/true', template)
-
-console.log(instance.getParams()) // { active: true }
-// Accepts: "true", "false", "1", "0" (case insensitive)
-```
-
-**Array Casting:**
-```typescript
-const template = new Analyze('/tags/:items=array')
-const instance = new Analyze('/tags/red,green,blue', template)
-
-console.log(instance.getParams()) // { items: ["red", "green", "blue"] }
-```
-
-**Error Handling:**
-```typescript
-try {
-  const template = new Analyze('/users/:id=number')
-  const instance = new Analyze('/users/abc', template)
-  instance.getParams() // Throws exception
-} catch (error) {
-  console.log('Casting error:', error.message)
-  // Error [E_CAST_NUMBER] at col 7: Invalid numeric value: "abc".
-}
-```
-
------
-
-## 📖 API Reference
-
-### `new Analyze<Path, TypedPath, Parser>(input, base?)`
-
-Creates a new URL analyzer instance.
-
-* **`input`**: `string`. The URL or template to analyze.
-* **`base`**: `Analyze` (optional). Base template for typed parameter extraction.
-
-### `.getParams()`
-
-Extracts path parameters with automatic type casting.
-
-* **Returns**: Object with typed parameters based on template definition.
-
-### `.getSearchParams()`
-
-Extracts search/query parameters with automatic type casting.
-
-* **Returns**: `Map<string, string | number | boolean | string[]>` or typed object.
-
-### `.getFragment()`
-
-Retrieves the fragment identifier from the URL.
-
-* **Returns**: `string | undefined` or typed fragment object.
-
-### `.getPathname()`
-
-Gets the pathname portion of the URL.
-
-* **Returns**: `string`. The pathname (e.g., '/users/:id').
-
-### `.getProtocol()`, `.getHostname()`, `.getPort()`
-
-Extract origin components from the URL.
-
-* **Returns**: `string | undefined`. The respective component.
-
-### `.display()`
-
-Returns a formatted table showing the AST structure with colored output.
-
-* **Returns**: `string`. Formatted analysis table.
 
 -----
 
@@ -199,61 +96,18 @@ url-ast supports various routing patterns for flexible URL matching:
 
 -----
 
-## 🔧 Advanced Usage
+## 🎯 Type Casting System
 
-### Router Integration
+The parser supports automatic type casting for path and query parameters, providing type-safe parameter extraction.
 
-```typescript
-import { Router } from '@asterflow/router'
-import { Analyze } from 'url-ast'
+### Supported Types
 
-const router = new Router({
-  path: '/users/:id=number/posts/:postId=string',
-  methods: {
-    get({ url }) {
-      // url is an instance of Analyze
-      const params = url.getParams()
-      // params is typed as { id: number, postId: string }
-      return response.success({ params })
-    }
-  }
-})
-```
-
-### Static Props Extraction
-
-```typescript
-// Next.js-style dynamic routes
-const template = new Analyze('/posts/[...slug]')
-const instance = new Analyze('/posts/2024/01/hello-world', template)
-
-console.log(instance.getStaticProps())
-// { slug: ['2024', '01', 'hello-world'] }
-```
-
-### Structure Visualization
-
-```typescript
-const analyzer = new Analyze('/users/:id=number?active=boolean#section')
-
-console.log(analyzer.display())
-/*
-Id  Symbol  Expression  Type    Start  End
-1   /       Slash      -       0      1
-2   users   Path       -       1      6
-3   /       Slash      -       6      7
-4   :       Colon      -       7      8
-5   id      Variable   -       8      10
-6   =       Equal      -       10     11
-7   number  Value      Number  11     17
-8   ?       Query      -       17     18
-9   active  Parameter  -       18     24
-10  =       Equal      -       24     25
-11  boolean Value      Boolean 25     32
-12  #       Hash       -       32     33
-13  section Fragment   -       33     40
-*/
-```
+| Type | Syntax | Description | Example |
+| :--- | :--- | :--- | :--- |
+| **Number** | `:param=number` | Converts to numeric values (integers, decimals, negatives) | `123`, `-42`, `99.99` |
+| **Boolean** | `:param=boolean` | Converts to boolean (`true`/`false`, `1`/`0`, case-insensitive) | `true`, `false`, `1`, `0` |
+| **String** | `:param=string` or `:param` | Default type, keeps as string | `hello-world`, `user_123` |
+| **Array** | `:param=array` | Converts comma-separated values to array | `red,green,blue` → `['red', 'green', 'blue']` |
 
 -----
 
