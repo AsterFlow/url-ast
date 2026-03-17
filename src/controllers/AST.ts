@@ -4,17 +4,22 @@ import { colorizePath, renderTable } from '../utils/table'
 import { ErrorLog } from './Error'
 import { Node } from './Node'
 
-export class AST<const Path extends string>{
+export class AST<const Path extends string> {
   readonly expressions: Set<number>
   readonly input: Path
   readonly nodes: Node[]
 
-  constructor(input: Path, readonly errors: ErrorLog[] = []) {
+  constructor(input: Path, readonly errors: ErrorLog[] = [], nodes?: Node[]) {
     this.input = input
-  
-    const { expressions, nodes } = this.parser(this.input, this.errors)
-    this.nodes = nodes
-    this.expressions = expressions
+
+    if (nodes) {
+      this.nodes = nodes
+      this.expressions = new Set(nodes.map(n => n.expression))
+    } else {
+      const { expressions, nodes: parsedNodes } = this.parser(this.input, this.errors)
+      this.nodes = parsedNodes
+      this.expressions = expressions
+    }
   }
 
   /**
@@ -34,15 +39,15 @@ export class AST<const Path extends string>{
     }
 
     switch (typeof idOrName) {
-    case 'string': {
-      const id = nodes.findIndex((node) => this.getContent(node, input) === idOrName)
-      if (id === -1) return
-  
-      return getById(id)
-    }
-    case 'number': {
-      return getById(idOrName)
-    }
+      case 'string': {
+        const id = nodes.findIndex((node) => this.getContent(node, input) === idOrName)
+        if (id === -1) return
+
+        return getById(id)
+      }
+      case 'number': {
+        return getById(idOrName)
+      }
     }
   }
 
@@ -75,15 +80,15 @@ export class AST<const Path extends string>{
     const getTypeById = (id: number) => nodes[id]?.type
 
     switch (typeof idOrName) {
-    case 'string': {
-      const result = this.getNode(idOrName, nodes, input)
-      if (!result) return
+      case 'string': {
+        const result = this.getNode(idOrName, nodes, input)
+        if (!result) return
 
-      return getTypeById(result.id)
-    }
-    case 'number': {
-      return getTypeById(idOrName)
-    }
+        return getTypeById(result.id)
+      }
+      case 'number': {
+        return getTypeById(idOrName)
+      }
     }
   }
 
@@ -94,7 +99,7 @@ export class AST<const Path extends string>{
    * @param {string} [input=this.input] - Optional input string context.
    * @returns {string} The substring for the node.
    */
-  getContent (node: Node, input: string = this.input): string {
+  getContent(node: Node, input: string = this.input): string {
     return input.slice(node.start, node.end)
   }
 
@@ -168,7 +173,7 @@ export class AST<const Path extends string>{
     return renderTable(rows, headers) + '\n\nPath: ' + colorizePath(input, node)
   }
 
-  parser (input: string, errors: ErrorLog[]) {
+  parser(input: string, errors: ErrorLog[]) {
     const nodes: Node[] = []
     const foundExpressions = new Set<number>()
     let state: AllValues = InternalExpression.Null
@@ -184,11 +189,11 @@ export class AST<const Path extends string>{
 
       if (
         state === InternalExpression.Void
-          && foundExpressions.has(InternalExpression.Ellipsis)
-          && next !== undefined
+        && foundExpressions.has(InternalExpression.Ellipsis)
+        && next !== undefined
       ) {
         errors.push(new ErrorLog(
-          'E_UNEXPECTED_TOKEN', 
+          'E_UNEXPECTED_TOKEN',
           'Unexpected token after catch-all \'[]\'. A catch-all must be the final element.',
           index + 1,
           input.length
@@ -229,32 +234,32 @@ export class AST<const Path extends string>{
 
         if (
           (state === InternalExpression.Path || state === InternalExpression.Variable)
-                  && (
-                    next === Delimiters.Ampersand
-                    || next === Delimiters.Colon
-                    || (state !== InternalExpression.Variable && EncodingSymbols.Equal === next)
-                  )
+          && (
+            next === Delimiters.Ampersand
+            || next === Delimiters.Colon
+            || (state !== InternalExpression.Variable && EncodingSymbols.Equal === next)
+          )
         ) {
           errors.push(new ErrorLog(
             'E_INVALID_SYNTAX',
-            `Unexpected token '${input[index+1]}'. A path segment or variable cannot be followed by '${RawTokens[next]}'.`,
+            `Unexpected token '${input[index + 1]}'. A path segment or variable cannot be followed by '${RawTokens[next]}'.`,
             index + 1,
             index + 2
           ))
         }
 
         if (state === InternalExpression.Parameter
-            && (
-              next === Delimiters.Colon
-              || next === Delimiters.Slash
-              || next === Delimiters.Query
-            )) {
+          && (
+            next === Delimiters.Colon
+            || next === Delimiters.Slash
+            || next === Delimiters.Query
+          )) {
           const isColon = next === Delimiters.Colon
           errors.push(new ErrorLog(
             'E_INVALID_SYNTAX',
-            isColon 
+            isColon
               ? 'A search parameter cannot be followed by a variable (\':\'). Use \'=\' to define a type or value.'
-              : `Unexpected token '${input[index+1]}'. A search parameter cannot be followed by '${RawTokens[next]}'.`,
+              : `Unexpected token '${input[index + 1]}'. A search parameter cannot be followed by '${RawTokens[next]}'.`,
             index + 1,
             index + 2
           ))
@@ -262,167 +267,167 @@ export class AST<const Path extends string>{
 
         if (!isDelimiter) continue
         foundExpressions.add(state)
-        
-        switch (state) {
-        case OriginExpression.Port:
-        case InternalExpression.Fragment:
-        case InternalExpression.Path:
-        case InternalExpression.Slug:
-        case InternalExpression.Variable: {
-          nodes.push(new Node(id, state, tokenStart, index + 1))
-          state = InternalExpression.Null
-          continue
-        }
-        case InternalExpression.Null: {
-          const content = input.slice(tokenEnd, index + 1)
-          tokenEnd = tokenEnd <= tokenStart ? (index + 1) : tokenEnd
 
-          switch (content) {
-          case 'http': {
-            nodes.push(new Node(id, OriginExpression.Protocol, tokenStart, tokenEnd))
-            break
+        switch (state) {
+          case OriginExpression.Port:
+          case InternalExpression.Fragment:
+          case InternalExpression.Path:
+          case InternalExpression.Slug:
+          case InternalExpression.Variable: {
+            nodes.push(new Node(id, state, tokenStart, index + 1))
+            state = InternalExpression.Null
+            continue
           }
-          case 'https': {
-            nodes.push(new Node(id, OriginExpression.Protocol, tokenStart, tokenEnd))
-            break
-          }
-          default: {
-            if (next !== Delimiters.Colon && next !== Delimiters.Slash) {
-              nodes.push(new Node(id, InternalExpression.Parameter, tokenStart, tokenEnd))
-              continue
+          case InternalExpression.Null: {
+            const content = input.slice(tokenEnd, index + 1)
+            tokenEnd = tokenEnd <= tokenStart ? (index + 1) : tokenEnd
+
+            switch (content) {
+              case 'http': {
+                nodes.push(new Node(id, OriginExpression.Protocol, tokenStart, tokenEnd))
+                break
+              }
+              case 'https': {
+                nodes.push(new Node(id, OriginExpression.Protocol, tokenStart, tokenEnd))
+                break
+              }
+              default: {
+                if (next !== Delimiters.Colon && next !== Delimiters.Slash) {
+                  nodes.push(new Node(id, InternalExpression.Parameter, tokenStart, tokenEnd))
+                  continue
+                }
+                nodes.push(new Node(id, OriginExpression.Hostname, tokenStart, tokenEnd))
+
+                if (next === Delimiters.Colon) {
+                  // ignore : of localhost:3000
+                  index += 2
+                  tokenStart = index
+                  state = OriginExpression.Port
+                }
+
+                continue
+              }
             }
-            nodes.push(new Node(id, OriginExpression.Hostname, tokenStart, tokenEnd))
+            // ignore :// of http://localhost
+            index += 4
+            tokenStart = index
+            state = OriginExpression.Hostname
+            continue
+          }
+          case OriginExpression.Hostname: {
+            nodes.push(new Node(id, state, tokenStart, index + 1))
 
             if (next === Delimiters.Colon) {
               // ignore : of localhost:3000
               index += 2
               tokenStart = index
               state = OriginExpression.Port
+              continue
             }
 
+            state = InternalExpression.Null
             continue
           }
-          }
-          // ignore :// of http://localhost
-          index += 4
-          tokenStart = index
-          state = OriginExpression.Hostname
-          continue
-        }
-        case OriginExpression.Hostname: {
-          nodes.push(new Node(id, state, tokenStart, index + 1))
+          case InternalExpression.Ellipsis: {
+            if (code !== CatchAllExpression.Point) {
+              foundExpressions.delete(state)
+              state = InternalExpression.Slug
+              continue
+            }
 
-          if (next === Delimiters.Colon) {
-            // ignore : of localhost:3000
+            const ellipsis = input.substring(index, index + 3)
+            if (ellipsis !== '...') {
+              errors.push(new ErrorLog(
+                'E_INVALID_CATCH_ALL',
+                `Invalid catch-all syntax. Expected '[...]' but found an incomplete sequence near '${ellipsis}'.`,
+                tokenStart,
+                index + ellipsis.length
+              ))
+              index += ellipsis.length - 1
+              state = InternalExpression.Void
+              continue
+            }
+
             index += 2
-            tokenStart = index
-            state = OriginExpression.Port
-            continue
-          }
-          
-          state = InternalExpression.Null
-          continue
-        }
-        case InternalExpression.Ellipsis: {
-          if (code !== CatchAllExpression.Point) {
-            foundExpressions.delete(state)
+            nodes.push(new Node(id, state, tokenStart, index + 1))
+            tokenStart = index + 1
             state = InternalExpression.Slug
             continue
           }
+          default: {
+            tokenEnd = tokenEnd <= tokenStart ? (index + 1) : tokenEnd
+            const content = input.slice(tokenStart, tokenEnd)
 
-          const ellipsis = input.substring(index, index + 3)
-          if (ellipsis !== '...') {
-            errors.push(new ErrorLog(
-              'E_INVALID_CATCH_ALL',
-              `Invalid catch-all syntax. Expected '[...]' but found an incomplete sequence near '${ellipsis}'.`,
-              tokenStart,
-              index + ellipsis.length
-            ))
-            index += ellipsis.length -1
-            state = InternalExpression.Void
+            switch (content) {
+              case 'number': {
+                nodes.push(new Node(id, state, tokenStart, tokenEnd, ContentTypes.Number))
+                break
+              }
+              case 'boolean': {
+                nodes.push(new Node(id, state, tokenStart, tokenEnd, ContentTypes.Boolean))
+                break
+              }
+              case 'string': {
+                nodes.push(new Node(id, state, tokenStart, tokenEnd, ContentTypes.String))
+                break
+              }
+              case 'array': {
+                nodes.push(new Node(id, state, tokenStart, tokenEnd, ContentTypes.Array))
+                break
+              }
+              default: {
+                nodes.push(new Node(id, state, tokenStart, tokenEnd))
+                break
+              }
+            }
+
+            state = InternalExpression.Null
             continue
           }
-          
-          index += 2
-          nodes.push(new Node(id, state, tokenStart, index + 1))
-          tokenStart = index + 1
-          state = InternalExpression.Slug
-          continue
-        }
-        default: {
-          tokenEnd = tokenEnd <= tokenStart ? (index + 1) : tokenEnd
-          const content = input.slice(tokenStart, tokenEnd)
-
-          switch (content) {
-          case 'number': {
-            nodes.push(new Node(id, state, tokenStart, tokenEnd, ContentTypes.Number))
-            break
-          }
-          case 'boolean': {
-            nodes.push(new Node(id, state, tokenStart, tokenEnd, ContentTypes.Boolean))
-            break
-          }
-          case 'string': {
-            nodes.push(new Node(id, state, tokenStart, tokenEnd, ContentTypes.String))
-            break
-          }
-          case 'array': {
-            nodes.push(new Node(id, state, tokenStart, tokenEnd, ContentTypes.Array))
-            break
-          }
-          default: {
-            nodes.push(new Node(id, state, tokenStart, tokenEnd))
-            break
-          }
-          }
-
-          state = InternalExpression.Null
-          continue
-        }
         }
       }
 
       switch (code as AllValues) {
-      case Delimiters.Hash: /* # */ {
-        state = InternalExpression.Fragment
-        break
-      }
-      case Delimiters.Slash: /* / */ {
-        state = InternalExpression.Path
-        break
-      }
-      case Delimiters.Ampersand: /* & */ {
-        state = InternalExpression.Parameter
-        break
-      }
-      case Delimiters.Semicolon: /* ; */ {
-        state = InternalExpression.Parameter
-        break
-      }
-      case Delimiters.Query: /* ? */ {
-        state = InternalExpression.Parameter
-        break
-      }
-      case Delimiters.Colon: /* : */ {
-        state = InternalExpression.Variable
-        break
-      }
-      case Delimiters.Asterisk: /* * */ {
-        state = InternalExpression.Void
-        break
-      }
-      case Delimiters.LeftBracket: /* [ */ {
-        state = InternalExpression.Ellipsis
-        break
-      }
-      case Delimiters.RightBracket: /* ] */ {
-        state = InternalExpression.Null
-        break
-      }
-      case EncodingSymbols.Equal: /* = */ {
-        state = InternalExpression.Value
-        break
-      }
+        case Delimiters.Hash: /* # */ {
+          state = InternalExpression.Fragment
+          break
+        }
+        case Delimiters.Slash: /* / */ {
+          state = InternalExpression.Path
+          break
+        }
+        case Delimiters.Ampersand: /* & */ {
+          state = InternalExpression.Parameter
+          break
+        }
+        case Delimiters.Semicolon: /* ; */ {
+          state = InternalExpression.Parameter
+          break
+        }
+        case Delimiters.Query: /* ? */ {
+          state = InternalExpression.Parameter
+          break
+        }
+        case Delimiters.Colon: /* : */ {
+          state = InternalExpression.Variable
+          break
+        }
+        case Delimiters.Asterisk: /* * */ {
+          state = InternalExpression.Void
+          break
+        }
+        case Delimiters.LeftBracket: /* [ */ {
+          state = InternalExpression.Ellipsis
+          break
+        }
+        case Delimiters.RightBracket: /* ] */ {
+          state = InternalExpression.Null
+          break
+        }
+        case EncodingSymbols.Equal: /* = */ {
+          state = InternalExpression.Value
+          break
+        }
       }
 
       nodes.push(new Node(id, code, index, index + 1))
