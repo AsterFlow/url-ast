@@ -11,7 +11,7 @@ export default defineConfig([
     rules: {
       indent: ['error', 2],
       semi: ['error', 'never'],
-      quotes: ['error', 'single']
+      quotes: ['error', 'single'],
     }
   },
   tseslint.configs.recommended,
