@@ -21,7 +21,7 @@ import { Node } from './Node'
  * const parser = new Analyze(template)
  * 
  * // Display internal node table
- * console.log(parser.display())
+ * console.log(parser.ast.display())
  * console.log(parser.getPathname()) // '/users/:id'
  * console.log(parser.getParams()) // ['id']
  * console.log(parser.getSearchParams()) // Map(1) { "active": "boolean" }
@@ -59,7 +59,6 @@ export class Analyze<
     }
   
     this.ast = new AST(this.input, this.errors)
-    this.errors.push(...this.ast.errors)
   }
 
   /**
@@ -76,7 +75,7 @@ export class Analyze<
   getParams<P extends Analyze<any>>(this: Analyze<Path, TypedPath, P>): P extends Analyze<infer _TemplatePath, infer TemplateTypedPath> ? TemplateTypedPath['params'] : never
   getParams(): string[] | (Parser extends Analyze<infer _P, infer T> ? T['params'] : never) {
     /**
-     * Caso seja expecificado um parser na variavel this.parser
+     * Caso seja expecificado um parser na variavel this.base
      */
     if (this.base && this.base.isParser) {
       const params: Record<string, string | number | boolean | string[]> = {}
@@ -207,7 +206,7 @@ export class Analyze<
         continue
       }
 
-      const content = this.ast.getContent(nextNode)
+      const content = decodeURIComponentUTF8(this.ast.getContent(nextNode))
       if (content === null) {
         this.errors.push(new ErrorLog('E_DECODE_URI', 'Failed to decode URI component for a search parameter value.', nextNode.start, nextNode.end))
         continue
@@ -452,9 +451,10 @@ export class Analyze<
     return this.ast.getContent(node)
   }
 
-  setParser (base: Parser) {
-    this.base = base
-    this.isParser = true as Parser extends undefined ? true : false
+  setParser<SetParser extends Analyze<string>>(base: SetParser): Analyze<Path, TypedPath, SetParser> {
+    (this as any).base = base
+    ;(this as any).isParser = false
+    return this as any
   }
 
   /**
