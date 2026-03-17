@@ -72,12 +72,7 @@ export class AST<const Path extends string>{
    * @param {?string} [input] - Optional input string context.
    */
   getType(idOrName: string | number, nodes: Node[] = this.nodes, input?: string) {
-    const getTypeById = (id: number) => {
-      const valueNode = nodes[id]
-      if (!valueNode || valueNode.expression !== InternalExpression.Value) return
-
-      return valueNode.type
-    }
+    const getTypeById = (id: number) => nodes[id]?.type
 
     switch (typeof idOrName) {
     case 'string': {

@@ -24,9 +24,9 @@ export class Node {
      * 1 Byte
      */
     public type: ContentTypes | InternalExpression.Null = 
-    ![InternalExpression.Parameter, InternalExpression.Value].includes(this.expression as InternalExpression)
-      ? InternalExpression.Null
-      : ContentTypes.String
+    [InternalExpression.Value, InternalExpression.Variable].includes(expression as number)
+      ? ContentTypes.String
+      : InternalExpression.Null
   ) {}
 
   setExpression (expression: AllValues) {
