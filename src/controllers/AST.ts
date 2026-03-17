@@ -437,4 +437,64 @@ export class AST<const Path extends string> {
 
     return { nodes, expressions: foundExpressions }
   }
+
+  /**
+   * Serializes the AST into a binary Buffer.
+   * 
+   * Buffer Structure:
+   * 1. Node Count (2 bytes, LE): Number of nodes in the AST.
+   * 2. URL Length (4 bytes, LE): Length of the input string in bytes.
+   * 3. Nodes Data (nodeCount * Node.SIZE bytes): Binary data for each Node object.
+   * 4. URL String (urlLength bytes): Original UTF-8 encoded input string.
+   * 
+   * @returns {Buffer} Buffer containing the serialized AST.
+   */
+  getBuffer(): Buffer {
+    const urlBuffer = Buffer.from(this.input, 'utf-8')
+    const nodeCount = this.nodes.length
+    const nodesLength = nodeCount * Node.SIZE
+
+    const buffer = Buffer.alloc(2 + 4 + nodesLength + urlBuffer.length)
+    let cursor = 0
+
+    buffer.writeUInt16LE(nodeCount, cursor)
+    cursor += 2
+
+    buffer.writeUInt32LE(urlBuffer.length, cursor)
+    cursor += 4
+
+    this.nodes.forEach((node, i) => node.writeToBuffer(buffer, cursor + (i * Node.SIZE)))
+    cursor += nodesLength
+
+    urlBuffer.copy(buffer, cursor)
+
+    return buffer
+  }
+
+  /**
+   * Reconstructs an AST instance from a binary Buffer.
+   * 
+   * Reads node count and URL length headers, extracts nodes using Node.fromBuffer,
+   * and decodes the original input string.
+   * 
+   * @param {Buffer} buffer The Buffer containing serialized AST data.
+   * @returns {AST<string>} A new reconstructed AST instance.
+   */
+  static fromBuffer(buffer: Buffer): AST<string> {
+    let cursor = 0
+
+    const nodeCount = buffer.readUInt16LE(cursor)
+    cursor += 2
+
+    const urlLength = buffer.readUInt32LE(cursor)
+    cursor += 4
+
+    const nodesSize = nodeCount * Node.SIZE
+    const nodes = Node.fromBuffer(buffer.subarray(cursor, cursor + nodesSize))
+    cursor += nodesSize
+
+    const input = buffer.toString('utf-8', cursor, cursor + urlLength)
+
+    return new AST(input, [], nodes)
+  }
 }
