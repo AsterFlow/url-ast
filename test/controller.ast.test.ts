@@ -86,7 +86,7 @@ describe('Controller: AST', () => {
   it('should extract the correct substring when using getContent', () => {
     const ast = new AST('/users/123')
     const node = ast.nodes[1] // 'users'
-    expect(ast.getContent(node)).toBe('users')
+    expect(ast.getContent(node!)).toBe('users')
   })
 
   it('should return the value after a parameter when using getValue', () => {
