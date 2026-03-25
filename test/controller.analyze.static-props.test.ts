@@ -61,5 +61,41 @@ describe('Controller: Analyze (Static Props)', () => {
       const instance = new Analyze('/docs/a/b/edit', template)
       expect(instance.getStaticProps()).toEqual({ slug: ['a', 'b'] })
     })
+
+    it('should decode Latin characters in dynamic segments', () => {
+      const template = new Analyze('/cidade/[nome]')
+      const instance = new Analyze('/cidade/S%C3%A3o%20Paulo', template)
+      expect(instance.getStaticProps()).toEqual({ nome: 'São Paulo' })
+    })
+
+    it('should decode CJK characters in dynamic segments', () => {
+      const template = new Analyze('/user/[name]')
+      const instance = new Analyze('/user/%E4%BD%A0%E5%A5%BD', template)
+      expect(instance.getStaticProps()).toEqual({ name: '你好' })
+    })
+
+    it('should decode Cyrillic characters in dynamic segments', () => {
+      const template = new Analyze('/city/[name]')
+      const instance = new Analyze('/city/%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0', template)
+      expect(instance.getStaticProps()).toEqual({ name: 'Москва' })
+    })
+
+    it('should decode Latin characters in catch-all segments', () => {
+      const template = new Analyze('/files/[...path]')
+      const instance = new Analyze('/files/caf%C3%A9/a%C3%A7%C3%A3o', template)
+      expect(instance.getStaticProps()).toEqual({ path: ['café', 'ação'] })
+    })
+
+    it('should decode emoji in dynamic segments', () => {
+      const template = new Analyze('/reaction/[emoji]')
+      const instance = new Analyze('/reaction/%F0%9F%8E%89', template)
+      expect(instance.getStaticProps()).toEqual({ emoji: '🎉' })
+    })
+
+    it('should match static segments with encoded characters', () => {
+      const template = new Analyze('/caf%C3%A9/[id]')
+      const instance = new Analyze('/caf%C3%A9/123', template)
+      expect(instance.getStaticProps()).toEqual({ id: '123' })
+    })
   })
 })

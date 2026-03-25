@@ -1,57 +1,79 @@
-import { ContentTypes, Delimiters, EncodingSymbols, InternalExpression, OriginExpression } from '../types/node'
-
-export function colorize<C extends AnsiColor>(text: string, color: C): string {
-  return `\u001b[${color}m${text}\u001b[${AnsiColor.Reset}m`
-}
+import { CatchAllExpression, ContentTypes, DynamicVariableDelimiters, GeneralDelimiters, InternalExpression, Operators, OriginExpression, ParameterDelimiters } from '../types/node'
 
 export enum AnsiColor {
-  Reset = 0,
-  Black = 30,
-  Red = 31,
-  Green = 32,
-  Yellow = 33,
-  Blue = 34,
-  Magenta = 35,
-  Cyan = 36,
-  White = 37,
-  BrightBlack = 90,
-  BrightRed = 91,
-  BrightGreen = 92,
-  BrightYellow = 93,
-  BrightBlue = 94,
-  BrightMagenta = 95,
-  BrightCyan = 96,
-  BrightWhite = 97,
+  Reset = '\x1b[0m',
+  Bold = '\x1b[1m',
+  Italic = '\x1b[3m',
+  Underline = '\x1b[4m',
+  Black = '\x1b[30m',
+  Red = '\x1b[31m',
+  Green = '\x1b[32m',
+  Yellow = '\x1b[33m',
+  Blue = '\x1b[34m',
+  Magenta = '\x1b[35m',
+  Cyan = '\x1b[36m',
+  White = '\x1b[37m',
+  BrightBlack = '\x1b[90m',
+  BrightRed = '\x1b[91m',
+  BrightGreen = '\x1b[92m',
+  BrightYellow = '\x1b[93m',
+  BrightBlue = '\x1b[94m',
+  BrightMagenta = '\x1b[95m',
+  BrightCyan = '\x1b[96m',
+  BrightWhite = '\x1b[97m',
 }
 
-export const contentTypeColorMap: Record<ContentTypes, AnsiColor> = {
-  [ContentTypes.Boolean]: AnsiColor.BrightGreen,
-  [ContentTypes.String]: AnsiColor.BrightYellow,
-  [ContentTypes.Number]: AnsiColor.BrightBlue,
+export function colorize(text: string, color: AnsiColor): string {
+  return `${color}${text}${AnsiColor.Reset}`
+}
+
+// Mantendo contraste semântico para os tipos de conteúdo
+export const contentTypeColorMap: Record<number, AnsiColor> = {
+  [ContentTypes.Number]: AnsiColor.BrightYellow,
+  [ContentTypes.Boolean]: AnsiColor.BrightBlue,
+  [ContentTypes.String]: AnsiColor.BrightGreen,
   [ContentTypes.Array]: AnsiColor.BrightMagenta,
+  [ContentTypes.Enum]: AnsiColor.BrightCyan,
 }
 
+// Cores distribuídas visando hierarquia visual e separação de contexto
 export const expressionKeyColorMap: Record<number, AnsiColor> = {
-  [OriginExpression.Protocol]: AnsiColor.BrightCyan,
-  [OriginExpression.Hostname]: AnsiColor.Cyan,
+  // Delimitadores em cinza para reduzir o ruído na leitura da árvore
+  [GeneralDelimiters.Hash]: AnsiColor.BrightBlack,
+  [GeneralDelimiters.Slash]: AnsiColor.BrightBlack,
+  [ParameterDelimiters.Ampersand]: AnsiColor.BrightBlack,
+  [ParameterDelimiters.Semicolon]: AnsiColor.BrightBlack,
+  [ParameterDelimiters.Query]: AnsiColor.BrightBlack,
+  [DynamicVariableDelimiters.Colon]: AnsiColor.BrightBlack,
+  [GeneralDelimiters.Comma]: AnsiColor.BrightBlack,
+  
+  // Exceções de delimitadores que precisam de destaque
+  [CatchAllExpression.Asterisk]: AnsiColor.BrightRed,
+  [DynamicVariableDelimiters.LeftBracket]: AnsiColor.White,
+  [DynamicVariableDelimiters.RightBracket]: AnsiColor.White,
+
+  [Operators.TypeAnnotation]: AnsiColor.BrightWhite,
+  [Operators.Default]: AnsiColor.BrightWhite,
+
+  // Base da URL com cores primárias de alto contraste
+  [OriginExpression.Protocol]: AnsiColor.BrightMagenta,
+  [OriginExpression.Hostname]: AnsiColor.BrightBlue,
   [OriginExpression.Port]: AnsiColor.BrightYellow,
+  [OriginExpression.Separator]: AnsiColor.BrightBlack,
 
-  [Delimiters.Slash]: AnsiColor.Blue,
-  [Delimiters.Colon]: AnsiColor.Green,
-  [Delimiters.Ampersand]: AnsiColor.BrightBlue,
-  [Delimiters.Query]: AnsiColor.BrightWhite,
-  [Delimiters.Hash]: AnsiColor.Red,
-  [Delimiters.Asterisk]: AnsiColor.BrightRed,
-  [Delimiters.LeftBracket]: AnsiColor.Magenta,
-  [Delimiters.RightBracket]: AnsiColor.Magenta,
+  // Expressões internas com variações complementares
+  [InternalExpression.None]: AnsiColor.Reset,
+  [InternalExpression.Path]: AnsiColor.BrightCyan,
+  [InternalExpression.Fragment]: AnsiColor.Yellow,
+  [InternalExpression.Parameter]: AnsiColor.BrightGreen,
+  [InternalExpression.Type]: AnsiColor.White,
+  [InternalExpression.Variable]: AnsiColor.Cyan,
+  
+  // Variações de expressões dinâmicas com gradação de cores
+  [InternalExpression.Dynamic]: AnsiColor.Blue,
+  [InternalExpression.DynamicCatchAll]: AnsiColor.BrightBlue,
+  [InternalExpression.DynamicOptionalCatchAll]: AnsiColor.BrightMagenta,
 
-  [EncodingSymbols.Equal]: AnsiColor.White,
-
-  [InternalExpression.Path]: AnsiColor.BrightBlack,
-  [InternalExpression.Parameter]: AnsiColor.Green,
-  [InternalExpression.Value]: AnsiColor.BrightMagenta,
-  [InternalExpression.Ellipsis]: AnsiColor.Black,
-  [InternalExpression.Slug]: AnsiColor.Green,
-  [InternalExpression.Fragment]: AnsiColor.BrightCyan,
-  [InternalExpression.Variable]: AnsiColor.Green,
+  [InternalExpression.Default]: AnsiColor.BrightGreen,
+  [InternalExpression.Wildcard]: AnsiColor.BrightRed,
 }

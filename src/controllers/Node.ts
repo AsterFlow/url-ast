@@ -1,7 +1,10 @@
-import { ContentTypes, InternalExpression, type AllValues } from '../types/node'
+import type { NodeJSON } from '../types/ast'
+import { ContentTypes, InternalExpression, SemanticTokens, type AllValues } from '../types/node'
 
 export class Node {
-  static readonly SIZE = 7 as const
+  static readonly SIZE = 10 as const
+
+  public body: Node[] = []
 
   constructor(
     /**
@@ -11,7 +14,7 @@ export class Node {
     /**
      * 1 Byte
      */
-    public expression: AllValues = InternalExpression.Null,
+    public expression: AllValues = InternalExpression.None,
     /**
      * 2 Bytes
      */
@@ -21,52 +24,133 @@ export class Node {
      */
     public end: number = 0,
     /**
+     * String value carried by the node.
+     */
+    public value: string = '',
+    /**
      * 1 Byte
      */
-    public type: ContentTypes | InternalExpression.Null = 
-    [InternalExpression.Value, InternalExpression.Variable].includes(expression as number)
+    public type: ContentTypes | InternalExpression.None = 
+    [InternalExpression.Parameter, InternalExpression.Variable].includes(expression as number)
       ? ContentTypes.String
-      : InternalExpression.Null
+      : InternalExpression.None,
+    /**
+     * 1 Byte
+     */
+    public optional: boolean = false
   ) {}
 
-  setExpression (expression: AllValues) {
+  setExpression(expression: AllValues) {
     this.expression = expression
     return this
   }
 
-  setType (type: ContentTypes) {
+  setType(type: ContentTypes) {
     this.type = type
     return this
   }
 
-  setPosition (x1: number, x2: number) {
-    this.start = x1
-    this.end = x2
+  setPosition(start: number, end: number) {
+    this.start = start
+    this.end = end
+
     return this
   }
 
-  writeToBuffer(buffer: Buffer, off: number): void {
-    buffer.writeUInt8(this.id, off)
-    buffer.writeUInt8(this.expression, off + 1)
-    buffer.writeUInt16LE(this.start, off + 2)
-    buffer.writeUInt16LE(this.end, off + 4)
-    buffer.writeUInt8(this.type, off + 6)
+  setValue(value: string) {
+    this.value = value
+
+    return this
   }
 
-  /** read a Node out of a Buffer at byte-offset `off` */
-  static fromBuffer(buffer: Buffer): Node[] {
-    const nodes: Node[] = []
+  setBody(body: Node[]) {
+    this.body = body
 
-    for (let off = 0; off < buffer.length; off += Node.SIZE) {
-      const id = buffer.readUInt8(off) as AllValues
-      const expression = buffer.readUInt8(off + 1) as AllValues
-      const start = buffer.readUInt16LE(off + 2)
-      const end = buffer.readUInt16LE(off + 4)
-      const type = buffer.readUInt8(off + 6)
-  
-      nodes.push(new Node(id, expression, start, end, type))
+    return this
+  }
+
+  setOptional(isOptional: boolean) {
+    this.optional = isOptional
+    return this
+  }
+
+  /**
+   * Recursively writes this node and its descendants into a binary buffer.
+   *
+   * @param {Buffer} buffer Target buffer.
+   * @param {number} currentOffset Current write offset.
+   * @returns {number} Next offset after this subtree has been written.
+   */
+  writeToBuffer(buffer: Buffer, currentOffset: number): number {
+    buffer.writeUInt8(this.id, currentOffset)
+    buffer.writeUInt8(this.expression, currentOffset + 1)
+    buffer.writeUInt16LE(this.start, currentOffset + 2)
+    buffer.writeUInt16LE(this.end, currentOffset + 4)
+    buffer.writeUInt8(this.type, currentOffset + 6)
+    buffer.writeUInt8(this.optional ? 1 : 0, currentOffset + 7)
+    buffer.writeUInt16LE(this.body.length, currentOffset + 8)
+
+    let nextOffset = currentOffset + Node.SIZE
+
+    for (const childNode of this.body) {
+      nextOffset = childNode.writeToBuffer(buffer, nextOffset)
     }
 
-    return nodes
+    return nextOffset
+  }
+
+  /**
+   * Recursively reads nodes and their children from a binary buffer.
+   *
+   * @param {Buffer} buffer Source buffer.
+   * @param {number} currentOffset Starting offset.
+   * @param {number} nodeCount Number of sibling nodes to read at this level.
+   * @returns {{ nodes: Node[], newOffset: number }} Parsed nodes and the offset after them.
+   */
+  static fromBuffer(buffer: Buffer, currentOffset: number = 0, nodeCount: number): { nodes: Node[], newOffset: number } {
+    const parsedNodes: Node[] = []
+    let nextOffset = currentOffset
+
+    for (let index = 0; index < nodeCount; index++) {
+      const nodeId = buffer.readUInt8(nextOffset)
+      const nodeExpression = buffer.readUInt8(nextOffset + 1)
+      const nodeStart = buffer.readUInt16LE(nextOffset + 2)
+      const nodeEnd = buffer.readUInt16LE(nextOffset + 4)
+      const nodeType = buffer.readUInt8(nextOffset + 6)
+      const nodeOptional = buffer.readUInt8(nextOffset + 7) === 1
+      const childrenCount = buffer.readUInt16LE(nextOffset + 8)
+  
+      nextOffset += Node.SIZE
+
+      const currentNode = new Node(nodeId, nodeExpression, nodeStart, nodeEnd, '', nodeType, nodeOptional)
+
+      if (childrenCount > 0) {
+        const childrenData = Node.fromBuffer(buffer, nextOffset, childrenCount)
+        currentNode.setBody(childrenData.nodes)
+        nextOffset = childrenData.newOffset
+      }
+
+      parsedNodes.push(currentNode)
+    }
+
+    return { nodes: parsedNodes, newOffset: nextOffset }
+  }
+
+  toJSON(humanReadable: boolean = false): NodeJSON {
+    const resolveToken = (code: number): number | string =>
+      humanReadable ? (SemanticTokens[code] ?? code) : code
+
+    return {
+      id: this.id,
+      kind: resolveToken(this.expression),
+      value: this.value,
+      optional: this.optional === false ? undefined : this.optional,
+      type: this.type === 0 ? undefined : resolveToken(this.type),
+      body: this.body.length === 0 ? undefined : this.body.map((child) => child.toJSON(humanReadable)),
+      loc: {
+        start: { line: 1, column: this.start },
+        end: { line: 1, column: this.end }
+      }
+    }
   }
 }

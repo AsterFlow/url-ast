@@ -25,7 +25,7 @@ describe('Controller: Analyze (Buffer Serialization)', () => {
   })
 
   it('should serialize and reconstruct a template with path parameters', () => {
-    const original = new Analyze('/users/:id=number/posts/:postId')
+    const original = new Analyze('/users/:id.number/posts/:postId')
     const buffer = original.getBuffer()
     const reconstructed = Analyze.fromBuffer(buffer)
 
@@ -35,7 +35,7 @@ describe('Controller: Analyze (Buffer Serialization)', () => {
   })
 
   it('should serialize and reconstruct an instance with a base parser (Recursive)', () => {
-    const template = new Analyze('http://localhost:3000/api/:version/users/:id=number?active=boolean')
+    const template = new Analyze('http://localhost:3000/api/:version/users/:id.number?active.boolean')
     const original = new Analyze('http://localhost:3000/api/v1/users/42?active=true', template)
     
     const buffer = original.getBuffer()

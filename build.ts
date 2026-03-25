@@ -1,56 +1,127 @@
-import { build, type Options } from 'tsup'
-import { writeFile } from 'fs/promises'
+import { existsSync } from 'node:fs'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import { generateDtsBundle } from 'dts-bundle-generator'
-import { dirname, join } from 'path'
-import { mkdir } from 'fs/promises'
-import { existsSync } from 'fs'
-import { rm } from 'fs/promises'
+import { build, type Plugin } from 'esbuild'
 
-async function buildProject() {
-  if (existsSync('dist')) await rm('dist', { recursive: true })
+async function removeBlockComments(targetFilePath: string): Promise<void> {
+  const fileContent = await readFile(targetFilePath, 'utf-8')
+  const cleanedContent = fileContent.replace(/\/\*[\s\S]*?\*\//g, '')
+  
+  await writeFile(targetFilePath, cleanedContent, 'utf-8')
+}
 
-  const sharedConfig: Options = {
-    platform: 'node',
-    entry: ['src/index.ts'],
-    bundle: true,
-    minifyIdentifiers: true,
-    minifySyntax: true,
-    skipNodeModulesBundle: true,
-    clean: true,
-    dts: false,
-    target: 'es2022',
-    tsconfig: 'tsconfig.json',
+async function cleanDistDirectory(directoryPath: string): Promise<void> {
+  if (existsSync(directoryPath)) {
+    await rm(directoryPath, { recursive: true })
   }
+}
 
-  await build({
-    ...sharedConfig,
-    format: 'cjs',
-    outDir: 'dist/cjs',
-  })
+async function writePackageJson(directoryPath: string, moduleType: 'commonjs' | 'module'): Promise<void> {
+  const packageJsonPath = join(directoryPath, 'package.json')
+  const packageJsonContent = JSON.stringify({ type: moduleType }, null, 2)
+  
+  await writeFile(packageJsonPath, packageJsonContent)
+}
 
-  await build({
-    ...sharedConfig,
-    format: 'esm',
-    outDir: 'dist/mjs',
-    splitting: true,
-  })
-
-  await writeFile('dist/cjs/package.json', JSON.stringify({ type: 'commonjs' }, null, 2))
-  await writeFile('dist/mjs/package.json', JSON.stringify({ type: 'module' }, null, 2))
-
-  const dtsPath = join(process.cwd(), 'dist/types/index.d.ts') 
-  const dtsCode = generateDtsBundle([{
-    filePath: join(process.cwd(), 'src/index.ts'),
+async function generateTypes(sourceFilePath: string, outputDirectory: string): Promise<void> {
+  const declarationPath = join(outputDirectory, 'index.d.ts')
+  const declarationCodeArray = generateDtsBundle([{
+    filePath: sourceFilePath,
     output: {
       sortNodes: true,
-      exportReferencedTypes: false, 
+      exportReferencedTypes: false,
       inlineDeclareExternals: true,
       inlineDeclareGlobals: true
     }
   }])
 
-  await mkdir(dirname(dtsPath), { recursive: true })
-  await writeFile(dtsPath, dtsCode.join('\n'), { encoding: 'utf-8' })
+  await mkdir(dirname(declarationPath), { recursive: true })
+  await writeFile(declarationPath, declarationCodeArray.join('\n'), { encoding: 'utf-8' })
 }
 
-buildProject().catch(console.error) 
+function createExternalPlugin(moduleFormat: 'cjs' | 'esm'): Plugin {
+  return {
+    name: 'rewrite-external-imports',
+    setup(buildProcess) {
+      buildProcess.onResolve({ filter: /decodeURL/ }, () => {
+        const fileExtension = moduleFormat === 'cjs' ? '.cjs' : '.js'
+        
+        return {
+          path: `./utils/decodeURL${fileExtension}`,
+          external: true
+        }
+      })
+    }
+  }
+}
+
+async function buildProject(): Promise<void> {
+  const distDirectory = 'dist'
+  const currentWorkingDirectory = process.cwd()
+
+  await cleanDistDirectory(distDirectory)
+
+  await Promise.all([
+    build({
+      entryPoints: ['src/index.ts'],
+      bundle: true,
+      format: 'cjs',
+      outdir: 'dist/cjs',
+      outExtension: { '.js': '.cjs' },
+      minifySyntax: true,
+      minifyWhitespace: false,
+      minifyIdentifiers: false,
+      legalComments: 'none',
+      target: 'es2024',
+      plugins: [createExternalPlugin('cjs')]
+    }),
+
+    build({
+      entryPoints: ['src/utils/decodeURL.ts'],
+      bundle: true,
+      format: 'cjs',
+      outdir: 'dist/cjs/utils',
+      outExtension: { '.js': '.cjs' },
+      minify: true,
+      target: 'es2024'
+    }),
+
+    build({
+      entryPoints: ['src/index.ts'],
+      bundle: true,
+      format: 'esm',
+      outdir: 'dist/mjs',
+      minifySyntax: true,
+      minifyWhitespace: false,
+      minifyIdentifiers: false,
+      legalComments: 'none',
+      target: 'es2024',
+      plugins: [createExternalPlugin('esm')]
+    }),
+
+    build({
+      entryPoints: ['src/utils/decodeURL.ts'],
+      bundle: true,
+      format: 'esm',
+      outdir: 'dist/mjs/utils',
+      minify: true,
+      target: 'es2024'
+    })
+  ])
+
+  await Promise.all([
+    writePackageJson('dist/cjs', 'commonjs'),
+    writePackageJson('dist/mjs', 'module'),
+    generateTypes(join(currentWorkingDirectory, 'src/index.ts'), join(currentWorkingDirectory, 'dist/types'))
+  ])
+
+  await Promise.all([
+    removeBlockComments('dist/cjs/index.cjs'),
+    removeBlockComments('dist/mjs/index.js')
+  ])
+}
+
+buildProject().catch((buildError: unknown) => {
+  console.error(buildError)
+})

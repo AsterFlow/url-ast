@@ -5,7 +5,7 @@ import { ContentTypes, InternalExpression } from '../src/types/node'
 describe('Controller: AST', () => {
   it('should return the correct node when using getNode by index', () => {
     const ast = new AST('/users/[id]')
-    const node = ast.getNode(1)
+    const node = ast.getNode(0)
     expect(node).toBeDefined()
     expect(ast.getContent(node!)).toBe('users')
   })
@@ -14,7 +14,7 @@ describe('Controller: AST', () => {
     const ast = new AST('/users/[id]')
     const node = ast.getNode('users')
     expect(node).toBeDefined()
-    expect(node?.id).toBe(1)
+    expect(node?.id).toBe(0)
   })
 
   it('should return undefined when using getNode with non-existent id', () => {
@@ -32,36 +32,28 @@ describe('Controller: AST', () => {
   it('should return the correct occurrence when using getNodeByType', () => {
     const ast = new AST('/users/[id]/posts/[postId]')
     // InternalExpression.Path is 'users', 'posts', etc.
-    // In '/users/[id]/posts/[postId]':
-    // Node 0: '/' (Slash)
-    // Node 1: 'users' (Path) - start: 1
-    // Node 2: '/' (Slash)
-    // Node 3: '[' (LeftBracket)
-    // Node 4: 'id' (Slug)
-    // Node 5: ']' (RightBracket)
-    // Node 6: '/' (Slash)
-    // Node 7: 'posts' (Path) - start: 12
     const firstPath = ast.getNodeByType(InternalExpression.Path, 0)
     const secondPath = ast.getNodeByType(InternalExpression.Path, 1)
-    
+
     expect(firstPath).toBeDefined()
+    expect(firstPath!.start).toBe(1)
+
     expect(secondPath).toBeDefined()
-    expect(firstPath?.start).toBe(1)
-    expect(secondPath?.start).toBe(12)
+    expect(secondPath!.start).toBe(12)
   })
 
-  it('should return the content type of a value node when using getType', () => {
+  it('should return the content type of a parameter node when using getType', () => {
     const ast = new AST('/search?q=123')
-    // Node with '123' is the Value node.
-    const valueNode = ast.getNode('123')
-    expect(valueNode).toBeDefined()
-    expect(valueNode?.expression).toBe(InternalExpression.Value)
+    // Node with 'q' is a Parameter node.
+    const paramNode = ast.getNode('q')
+    expect(paramNode).toBeDefined()
+    expect(paramNode?.expression).toBe(InternalExpression.Parameter)
 
-    const type = ast.getType(valueNode!.id)
-    expect(type).toBe(ContentTypes.String) // Default for Value is String
+    const type = ast.getType(paramNode!.id)
+    expect(type).toBe(ContentTypes.String) // Default for Parameter is String
   })
 
-  it('should return the content type of a variable value node when using getType', () => {
+  it('should return the content type of a variable node when using getType', () => {
     const ast = new AST('/:search')
     const variableNode = ast.getNode('search')
     expect(variableNode).toBeDefined()
@@ -71,21 +63,21 @@ describe('Controller: AST', () => {
     expect(type).toBe(ContentTypes.String)
   })
 
-  it('should work for value nodes when using getType by name', () => {
+  it('should work for parameter nodes when using getType by name', () => {
     const ast = new AST('/search?q=true')
-    const type = ast.getType('true')
+    const type = ast.getType('q')
     expect(type).toBe(ContentTypes.String)
   })
 
-  it('should return InternalExpression.Null when using getType for non-value node', () => {
+  it('should return InternalExpression.None when using getType for non-value/variable node', () => {
     const ast = new AST('/users')
     const type = ast.getType('users')
-    expect(type).toBe(InternalExpression.Null)
+    expect(type).toBe(InternalExpression.None)
   })
 
   it('should extract the correct substring when using getContent', () => {
     const ast = new AST('/users/123')
-    const node = ast.nodes[1] // 'users'
+    const node = ast.nodes[0] // 'users'
     expect(ast.getContent(node!)).toBe('users')
   })
 
@@ -104,6 +96,7 @@ describe('Controller: AST', () => {
   it('should return undefined when using getValue for parameter without value', () => {
     const ast = new AST('/search?q')
     const value = ast.getValue('q')
+    // In current AST, if there is no '=', there is no value node following the parameter.
     expect(value).toBeUndefined()
   })
 
@@ -114,5 +107,30 @@ describe('Controller: AST', () => {
     expect(output).toContain('Id')
     expect(output).toContain('Symbol')
     expect(output).toContain('Path:')
+  })
+
+  it('should serialize toJSON with origin, path, query, and fragment layers', () => {
+    const input = 'https://example.com:8080/users/1?x=1&y=2#section'
+    const ast = new AST(input)
+    const json = ast.toJSON()
+
+    expect(json.type).toBe('URLDeclaration')
+    expect(json.input).toBe(input)
+    expect(json.origin).toBeDefined()
+    expect(json.origin?.protocol).toBeDefined()
+    expect(json.origin?.hostname).toBeDefined()
+    expect(json.origin?.port).toBeDefined()
+    expect(json.path?.body?.length).toBeGreaterThan(0)
+    expect(json.query?.body?.length).toBeGreaterThan(0)
+    expect(json.fragment?.body?.length).toBeGreaterThan(0)
+  })
+
+  it('should serialize toJSON with human-readable kind and type labels', () => {
+    const ast = new AST('/a?b=1')
+    const raw = ast.toJSON(false)
+    const hr = ast.toJSON(true)
+
+    expect(typeof (raw.path?.body?.[0] as { kind: unknown }).kind).toBe('number')
+    expect(typeof (hr.path?.body?.[0] as { kind: unknown }).kind).toBe('string')
   })
 })
