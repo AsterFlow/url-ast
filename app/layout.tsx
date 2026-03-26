@@ -4,12 +4,15 @@ import 'nextra-theme-docs/style.css';
 import { Head, Search } from "nextra/components";
 import { getPageMap } from "nextra/page-map";
 import "./globals.css";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 
-const jetbrainsMonoHeading = JetBrains_Mono({subsets:['latin'],variable:'--font-heading'});
-
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+
+
+// const jetbrainsMonoHeading = JetBrains_Mono({subsets:['latin'],variable:'--font-heading'});
+
+// const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -24,7 +27,7 @@ export default async function RootLayout({
   const pageMap = getPageMap()
 
   return (
-    <html lang="en" suppressHydrationWarning className={cn("font-sans", inter.variable, jetbrainsMonoHeading.variable)}>
+    <html lang="en" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
       <Head />
 
       <body>
