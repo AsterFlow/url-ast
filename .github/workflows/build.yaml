@@ -18,14 +18,12 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      # Baixa a branch 'main' na pasta 'main-repo'
       - name: Checkout main branch
         uses: actions/checkout@v4
         with:
           ref: 'main'
           path: 'main-repo'
 
-      # Baixa a branch 'docs' na pasta 'docs-repo'
       - name: Checkout docs branch
         uses: actions/checkout@v4
         with:
@@ -37,17 +35,14 @@ jobs:
         with:
           bun-version: latest
 
-      # Instala dependências da biblioteca principal
       - name: Install dependencies (Main Repository)
         working-directory: ./main-repo
         run: bun install
 
-      # Instala dependências do Docusaurus (agora apontando para a pasta correta)
       - name: Install dependencies (Docusaurus)
         working-directory: ./docs-repo
         run: bun install
 
-      # Executa o build do Docusaurus
       - name: Build Docusaurus Site
         working-directory: ./docs-repo
         run: bun run build
@@ -55,11 +50,10 @@ jobs:
       # - name: Configure GitHub Pages
       #   uses: actions/configure-pages@v5
 
-      # # Faz o upload dos arquivos estáticos gerados na pasta build do Docusaurus
-      # - name: Upload artifact
-      #   uses: actions/upload-pages-artifact@v4
-      #   with:
-      #     path: './docs-repo/build'
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: './docs-repo/build'
 
       # - name: Deploy to GitHub Pages
       #   id: deployment
