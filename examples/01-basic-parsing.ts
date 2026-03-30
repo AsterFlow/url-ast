@@ -13,4 +13,4 @@ console.log('Pathname:', analyzer.getPathname())   // '/users/list'
 console.log('Fragment:', analyzer.getFragment())  // 'section-1'
 
 console.log('\n--- AST Table (Internal Representation) ---')
-console.log(analyzer.ast.display())
+console.log(analyzer.ast.toJSON())
