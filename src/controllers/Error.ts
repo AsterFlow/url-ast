@@ -14,7 +14,7 @@ export class ErrorLog {
   /**
    * Displays the error message with its location.
    */
-  display(input: string): string {
+  toString(input: string): string {
     return colorize((
       `Error [${this.code}] at col ${this.start}: ${this.message}\n` +
       `${input}\n` +

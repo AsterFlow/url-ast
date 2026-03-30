@@ -89,48 +89,6 @@ export class AST<const Path extends string> {
   }
 
   /**
-   * Prints a formatted node table and colorizes the path segment of the output.
-   */
-  display(nodes: Node[] = this.nodes, input: string = this.input): string {
-    const displayRows: DisplayRow[] = []
-
-    const buildDisplayRows = (currentNodes: Node[], currentDepth: number) => {
-      for (const listNode of currentNodes) {
-        const indentString = currentDepth > 0 ? '  '.repeat(currentDepth - 1) + '└─ ' : ''
-        const rawString = input.slice(listNode.start, listNode.end)
-
-        displayRows.push({
-          idx: String(listNode.id + 1),
-          symbol: colorize(indentString + rawString, expressionKeyColorMap[listNode.expression] ?? AnsiColor.White),
-          expr: RawTokens[listNode.expression] ?? 'Unknown',
-          type: RawTokens[listNode.type] ?? '',
-          optional: listNode.optional ? 'Yes' : '-',
-          start: String(listNode.start),
-          end: String(listNode.end),
-        })
-
-        if (listNode.body.length > 0) {
-          buildDisplayRows(listNode.body, currentDepth + 1)
-        }
-      }
-    }
-
-    buildDisplayRows(nodes, 0)
-
-    const tableHeaders = {
-      idx: 'Id',
-      symbol: 'Symbol',
-      expr: 'Expression',
-      type: 'Type',
-      optional: 'Optional',
-      start: 'Start',
-      end: 'End',
-    } as const
-
-    return renderTable(displayRows, tableHeaders) + '\n\nPath: ' + colorizePath(input, nodes)
-  }
-
-  /**
    * Main parser implementation, split into focused responsibility blocks.
    */
   private parser(state?: AllValues, startIndex: number = 0, isRootLevel = true, isInsideDynamic = false): Node[] {
@@ -618,6 +576,48 @@ export class AST<const Path extends string> {
    */
   getFragmentNode(): Node | undefined {
     return this.nodes.find(n => n.expression === GeneralDelimiters.Hash)
+  }
+
+  /**
+   * Prints a formatted node table and colorizes the path segment of the output.
+   */
+  toString(nodes: Node[] = this.nodes, input: string = this.input): string {
+    const displayRows: DisplayRow[] = []
+
+    const buildDisplayRows = (currentNodes: Node[], currentDepth: number) => {
+      for (const listNode of currentNodes) {
+        const indentString = currentDepth > 0 ? '  '.repeat(currentDepth - 1) + '└─ ' : ''
+        const rawString = input.slice(listNode.start, listNode.end)
+
+        displayRows.push({
+          idx: String(listNode.id + 1),
+          symbol: colorize(indentString + rawString, expressionKeyColorMap[listNode.expression] ?? AnsiColor.White),
+          expr: RawTokens[listNode.expression] ?? 'Unknown',
+          type: RawTokens[listNode.type] ?? '',
+          optional: listNode.optional ? 'Yes' : '-',
+          start: String(listNode.start),
+          end: String(listNode.end),
+        })
+
+        if (listNode.body.length > 0) {
+          buildDisplayRows(listNode.body, currentDepth + 1)
+        }
+      }
+    }
+
+    buildDisplayRows(nodes, 0)
+
+    const tableHeaders = {
+      idx: 'Id',
+      symbol: 'Symbol',
+      expr: 'Expression',
+      type: 'Type',
+      optional: 'Optional',
+      start: 'Start',
+      end: 'End',
+    } as const
+
+    return renderTable(displayRows, tableHeaders) + '\n\nPath: ' + colorizePath(input, nodes)
   }
 
   /**

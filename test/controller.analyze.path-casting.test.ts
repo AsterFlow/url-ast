@@ -226,7 +226,7 @@ describe('Controller: Analyze (Path Casting)', () => {
       const template = new Analyze('/users/:id.number')
       const instance = new Analyze('/users/100', template)
       
-      const display = instance.ast.display()
+      const display = instance.ast.toString()
       // Remove ANSI codes to check plain text content
       const plainDisplay = display.replace(/\u001b\[[0-9;]*m/g, '')
       expect(plainDisplay).toContain('/users/100')
@@ -238,7 +238,7 @@ describe('Controller: Analyze (Path Casting)', () => {
       const instance = new Analyze('/api/2/status/true', template)
       
       const params = instance.getParams()
-      const display = instance.ast.display()
+      const display = instance.ast.toString()
       
       expect(params).toEqual({ version: 2, active: true })
       // Remove ANSI codes to check plain text content

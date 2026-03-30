@@ -74,6 +74,24 @@ export class Node {
     return this
   }
 
+  toJSON(humanReadable: boolean = false): NodeJSON {
+    const resolveToken = (code: number): number | string =>
+      humanReadable ? (SemanticTokens[code] ?? code) : code
+
+    return {
+      id: this.id,
+      kind: resolveToken(this.expression),
+      value: this.value,
+      optional: this.optional === false ? undefined : this.optional,
+      type: this.type === 0 ? undefined : resolveToken(this.type),
+      body: this.body.length === 0 ? undefined : this.body.map((child) => child.toJSON(humanReadable)),
+      loc: {
+        start: { line: 1, column: this.start },
+        end: { line: 1, column: this.end }
+      }
+    }
+  }
+
   /**
    * Recursively writes this node and its descendants into a binary buffer.
    *
@@ -134,23 +152,5 @@ export class Node {
     }
 
     return { nodes: parsedNodes, newOffset: nextOffset }
-  }
-
-  toJSON(humanReadable: boolean = false): NodeJSON {
-    const resolveToken = (code: number): number | string =>
-      humanReadable ? (SemanticTokens[code] ?? code) : code
-
-    return {
-      id: this.id,
-      kind: resolveToken(this.expression),
-      value: this.value,
-      optional: this.optional === false ? undefined : this.optional,
-      type: this.type === 0 ? undefined : resolveToken(this.type),
-      body: this.body.length === 0 ? undefined : this.body.map((child) => child.toJSON(humanReadable)),
-      loc: {
-        start: { line: 1, column: this.start },
-        end: { line: 1, column: this.end }
-      }
-    }
   }
 }

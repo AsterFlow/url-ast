@@ -38,7 +38,7 @@ import type { Node } from './Node'
  * const parser = new Analyze(template)
  * 
  * // Display internal node table
- * console.log(parser.ast.display())
+ * console.log(parser.ast.toString())
  * console.log(parser.getPathname()) // '/users/:id'
  * console.log(parser.getParams()) // ['id']
  * console.log(parser.getSearchParams()) // Map(1) { "active": "boolean" }
@@ -512,9 +512,9 @@ const AnalyzeImpl = class Analyze {
     return errors.length > 0
   }
 
-  displayErrors(errors: ErrorLog[] = this.errors): string {
+  formatErrors(errors: ErrorLog[] = this.errors): string {
     if (!this.hasErrors(errors)) return 'No errors found.'
-    return errors.map(e => e.display(this.input)).join('\n\n')
+    return errors.map(e => e.toString(this.input)).join('\n\n')
   }
 
   private resolveType(varNode: Node, parentNode: Node): ContentTypes {
@@ -560,12 +560,12 @@ const AnalyzeImpl = class Analyze {
       const lower = this.toLower(raw)
       if (lower === 'true' || lower === '1') return true
       if (lower === 'false' || lower === '0') return false
-      throw new Error(this.displayErrors([new ErrorLog('E_CAST_BOOLEAN', `Invalid boolean value: "${raw}". Expected 'true', 'false', '1', or '0'.`, start, end)]))
+      throw new Error(this.formatErrors([new ErrorLog('E_CAST_BOOLEAN', `Invalid boolean value: "${raw}". Expected 'true', 'false', '1', or '0'.`, start, end)]))
     }
     case ContentTypes.Number: {
       const n = Number(raw)
       if (Number.isNaN(n) || raw === '') {
-        throw new Error(this.displayErrors([new ErrorLog('E_CAST_NUMBER', `Invalid numeric value: "${raw}".`, start, end)]))
+        throw new Error(this.formatErrors([new ErrorLog('E_CAST_NUMBER', `Invalid numeric value: "${raw}".`, start, end)]))
       }
       return n
     }
@@ -581,7 +581,7 @@ const AnalyzeImpl = class Analyze {
 
       if (enumVariants.length === 0) {
         if (parts.some(p => p.length > 0)) {
-          throw new Error(this.displayErrors([new ErrorLog(
+          throw new Error(this.formatErrors([new ErrorLog(
             'E_CAST_ENUM',
             'No values are allowed for this enum (declaration is enum[]).',
             start,
@@ -593,7 +593,7 @@ const AnalyzeImpl = class Analyze {
 
       for (const p of parts) {
         if (p.length === 0) {
-          throw new Error(this.displayErrors([new ErrorLog(
+          throw new Error(this.formatErrors([new ErrorLog(
             'E_CAST_ENUM',
             `Empty segment is not allowed. Allowed: ${enumVariants.map(v => JSON.stringify(v)).join(', ')}.`,
             start,
@@ -601,7 +601,7 @@ const AnalyzeImpl = class Analyze {
           )]))
         }
         if (!enumVariants.includes(p)) {
-          throw new Error(this.displayErrors([new ErrorLog(
+          throw new Error(this.formatErrors([new ErrorLog(
             'E_CAST_ENUM',
             `Value ${JSON.stringify(p)} is not allowed. Allowed: ${enumVariants.map(v => JSON.stringify(v)).join(', ')}.`,
             start,

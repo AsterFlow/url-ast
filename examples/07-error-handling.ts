@@ -42,7 +42,7 @@ errorCases.forEach(({ name, url }) => {
   }
 
   if (analyzer.hasErrors()) {
-    console.log(analyzer.displayErrors())
+    console.log(analyzer.formatErrors())
   } else {
     console.log('No errors found (Unexpected).')
   }

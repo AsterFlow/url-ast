@@ -15,6 +15,8 @@
 - Grammar delimiters and symbols reorganized: `Delimiters` and `EncodingSymbols` were replaced by `ParameterDelimiters`, `DynamicVariableDelimiters`, `GeneralDelimiters`, `Operators`, and `CatchAllExpression`.
 - Internal expressions renamed/restructured (e.g., `Null` → `None`, `Value` → `Type`, new states for dynamic and *catch-all* segments); `ContentTypes.Array` numerically adjusted.
 - TypeScript inference for `ParseParams` / `ParseSearch` / `TypeMap` updated to support the new syntax (`.type`, `=default`, `~`, and `enum`).
+- Renamed the `displayErrors()` method to `formatErrors()` in the `Analyze` class and types.
+- Renamed the `display()` method to `toString()` in the `AST` and `ErrorLog` classes, adopting a more language-native standard for string conversion.
 
 ### Removed
 

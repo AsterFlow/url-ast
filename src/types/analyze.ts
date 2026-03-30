@@ -322,7 +322,7 @@ export type AnalyzeInstance<
    * @param {ErrorLog[]} [errors] - Optional error list to display (defaults to this.errors).
    * @returns {string} The formatted error report.
    */
-  displayErrors(errors?: ErrorLog[]): string
+  formatErrors(errors?: ErrorLog[]): string
 
   /**
    * Serializes the Analyze instance into a binary Buffer, including its AST and base parser.

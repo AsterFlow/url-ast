@@ -34,9 +34,9 @@ describe('Controller: Analyze (Errors)', () => {
     expect(() => instance.getSearchParams()).toThrow()
   })
 
-  it('should return a formatted error string from displayErrors()', () => {
+  it('should return a formatted error string from formatErrors()', () => {
     const analyzer = new Analyze('/:id:extra') // Erro de sintaxe no parser
-    expect(analyzer.displayErrors()).toContain('Error [E_INVALID_SYNTAX]')
+    expect(analyzer.formatErrors()).toContain('Error [E_INVALID_SYNTAX]')
   })
 
   it('should detect unexpected tokens in the path', () => {

@@ -100,9 +100,9 @@ describe('Controller: AST', () => {
     expect(value).toBeUndefined()
   })
 
-  it('should return a string when using display()', () => {
+  it('should return a string when using toString()', () => {
     const ast = new AST('/users/[id]')
-    const output = ast.display()
+    const output = ast.toString()
     expect(typeof output).toBe('string')
     expect(output).toContain('Id')
     expect(output).toContain('Symbol')
