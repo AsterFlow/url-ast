@@ -1,3 +1,5 @@
+import { LiveCode } from '@app/_components/home';
+
 # Tratamento de Erros
 
 O url-ast reporta erros de parse de forma estruturada, sem lançar exceções. Isso permite que você inspecione problemas e decida como lidar com eles.
@@ -20,26 +22,22 @@ A classe `ErrorLog` armazena informações sobre o erro encontrado durante o par
 
 Verifica se existem erros na instância:
 
-```typescript
-const parsed = new Analyze('/users/[unclosed')
+<LiveCode initialCode={`const parsed = new Analyze('/users/[unclosed')
 
 if (parsed.hasErrors()) {
   console.log('Encontrados erros de parse!')
-}
-```
+}`} />
 
-### `displayErrors()`
+### `formatErrors()`
 
 Retorna uma string formatada e legível com os detalhes de todos os erros:
 
-```typescript
-const parsed = new Analyze('/users/[unclosed')
+<LiveCode initialCode={`const parsed = new Analyze('/users/[unclosed')
 
 if (parsed.hasErrors()) {
-  console.log(parsed.displayErrors())
+  console.log(parsed.formatErrors())
   // Exibe uma mensagem detalhada sobre o colchete não fechado
-}
-```
+}`} />
 
 ---
 
@@ -47,15 +45,13 @@ if (parsed.hasErrors()) {
 
 Os erros estão disponíveis na propriedade `errors` tanto da instância `Analyze` quanto da `AST`:
 
-```typescript
-const parsed = new Analyze('/invalid/[route')
+<LiveCode initialCode={`const parsed = new Analyze('/invalid/[route')
 
 // Via Analyze
 console.log(parsed.errors)
 
 // Via AST
-console.log(parsed.ast.errors)
-```
+console.log(parsed.ast.errors)`} />
 
 ---
 
@@ -84,7 +80,7 @@ function parseRoute(url: string, template: Analyze) {
   const result = new Analyze(url, template)
 
   if (result.hasErrors()) {
-    console.warn('URL com problemas:', result.displayErrors())
+    console.warn('URL com problemas:', result.formatErrors())
     // Decide: retornar parcial, fallback, ou rejeitar
   }
 

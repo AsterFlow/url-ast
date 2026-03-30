@@ -1,3 +1,4 @@
+import { LiveCode } from '@app/_components/home';
 import { Callout } from 'nextra/components'
 
 # O que é o url-ast?
@@ -24,8 +25,7 @@ O fluxo de trabalho do url-ast gira em torno de dois conceitos:
 1. **Template (modelo):** Uma string que descreve a *forma* esperada da URL — quais segmentos são dinâmicos, quais tipos esperar, e quais query params existem.
 2. **URL concreta:** A URL real que será analisada contra o template.
 
-```typescript
-import { Analyze } from 'url-ast'
+<LiveCode initialCode={`import { Analyze } from 'url-ast'
 
 // 1. Declares the template
 const template = new Analyze('/users/:id.number?active.boolean')
@@ -34,8 +34,7 @@ const template = new Analyze('/users/:id.number?active.boolean')
 const result = new Analyze('/users/42?active=true', template)
 
 result.getParams()        // { id: 42 }
-result.getSearchParams()  // { active: true }
-```
+result.getSearchParams()  // { active: true }`} />
 
 O parser é **scannerless** — lexing e construção da árvore acontecem em uma única passada, sem etapas intermediárias.
 
@@ -43,7 +42,7 @@ O parser é **scannerless** — lexing e construção da árvore acontecem em um
 
 A AST gerada não é apenas para extração de dados. Você pode:
 
-- **Inspecionar** a estrutura com `ast.display()` (tabela formatada com cores ANSI)
+- **Inspecionar** a estrutura com `ast.toString()` (tabela formatada com cores ANSI)
 - **Serializar** para JSON com `ast.toJSON()` ou para binário com `ast.getBuffer()`
 - **Restaurar** a partir de um buffer com `AST.fromBuffer(buffer)`
 - **Navegar** pelos nós com `getNode()`, `getNodeByType()`, `getOriginNodes()`, `getPathNodes()`, etc.

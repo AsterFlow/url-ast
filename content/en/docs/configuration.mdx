@@ -1,3 +1,4 @@
+import { LiveCode } from '@app/_components/home';
 import { Callout } from 'nextra/components'
 
 # Initialization and Configuration Options
@@ -51,24 +52,24 @@ The second argument to `Analyze` can be a template (another instance) or an opti
 
 ```typescript
 interface AnalyzeNewOptions<T extends string> {
-  parser?: AnalyzeChain  // template/base for type casting
+  base?: AnalyzeChain  // template/base for type casting
 }
 ```
 
 Example with options:
 
-```typescript
+<LiveCode initialCode={`
 const template = new Analyze('/items/:id.number')
-const parsed = new Analyze('/items/99', { parser: template })
+const parsed = new Analyze('/items/99', { base: template })
 
 parsed.getParams() // { id: 99 }
-```
+`} />
 
 ## Reusing templates
 
 Templates are immutable and can be reused with multiple URLs:
 
-```typescript
+<LiveCode initialCode={`
 const template = new Analyze('/api/:version/users/:id.number?page.number')
 
 // Same template for multiple URLs
@@ -77,7 +78,7 @@ const v2 = new Analyze('/api/v2/users/20?page=5', template)
 
 v1.getParams() // { version: 'v1', id: 10 }
 v2.getParams() // { version: 'v2', id: 20 }
-```
+`} />
 
 <Callout type="info">
   For complete details on each `Analyze` method, see the [API Reference — Analyze](/en/docs/api/analyze).

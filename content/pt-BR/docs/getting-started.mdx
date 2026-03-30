@@ -1,5 +1,8 @@
+
+
 import { Callout, Steps } from 'nextra/components'
 import { TerminalCommandSelector } from '@/components/ui/codeblock'
+import { LiveCode } from '@app/_components/home';
 
 # Instalação e Primeiro Parse
 
@@ -56,20 +59,20 @@ console.log(parsed.getParams())
 
 Adicione parâmetros de consulta ao template para tipar tudo de uma vez:
 
-```typescript
+<LiveCode initialCode={`
 const template = new Analyze('/users/:id.number?active.boolean&role.enum[admin,user]')
 const parsed = new Analyze('/users/42?active=true&role=admin', template)
 
 console.log(parsed.getParams())        // { id: 42 }
 console.log(parsed.getSearchParams())  // { active: true, role: 'admin' }
-```
+`} />
 
 ### Opcional: inspecione a AST
 
 Precisa debugar ou entender como o parser interpretou a rota? Visualize a Árvore Sintática Abstrata:
 
 ```typescript
-console.log(parsed.ast.display())
+console.log(parsed.ast.toString())
 ```
 
 </Steps>
@@ -87,13 +90,13 @@ const parsed = Analyze.create('/posts/hello-world?page=3', template)
 
 ### `setParser` — definir template depois
 
-```typescript
+<LiveCode initialCode={`
 const url = new Analyze('/users/42')
 const template = new Analyze('/users/:id.number')
 const parsed = url.setParser(template)
 
 parsed.getParams() // { id: 42 }
-```
+`} />
 
 ## Próximos passos
 

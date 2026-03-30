@@ -1,8 +1,9 @@
+import { LiveCode } from '@app/_components/home';
 import { Callout } from 'nextra/components'
 
 # What is url-ast?
 
-**url-ast** parses URLs into an **Abstract Syntax Tree (AST)** and exposes helpers to read origin, path, query, and fragment. With an optional **template** instance as base, it **casts** path and search parameters to `number`, `boolean`, `string`, `array`, or **enum** variants, with full **TypeScript inference** from template string literals.
+**url-ast** is a URL parser that transforms any URL into an **Abstract Syntax Tree (AST)**, allowing you to extract and manipulate each component — path, parameters, query string, fragment, and origin — in a structured and fully typed way.
 
 ## Why url-ast?
 
@@ -21,33 +22,31 @@ import { Callout } from 'nextra/components'
 
 The url-ast workflow revolves around two concepts:
 
-1. **Template:** A string describing the expected *shape* of the URL — which segments are dynamic, what types to expect, and what query params exist.
-2. **Concrete URL:** The actual URL to be parsed against the template.
+1. **Template:** A string that describes the expected *shape* of the URL — which segments are dynamic, what types to expect, and which query params exist.
+2. **Concrete URL:** The actual URL that will be parsed against the template.
 
-```typescript
-import { Analyze } from 'url-ast'
+<LiveCode initialCode={`import { Analyze } from 'url-ast'
 
-// 1. Declare the template
+// 1. Declares the template
 const template = new Analyze('/users/:id.number?active.boolean')
 
-// 2. Parse a real URL against the template
+// 2. Parses a real URL against the template
 const result = new Analyze('/users/42?active=true', template)
 
 result.getParams()        // { id: 42 }
-result.getSearchParams()  // { active: true }
-```
+result.getSearchParams()  // { active: true }`} />
 
 The parser is **scannerless** — lexing and tree construction happen in a single pass, with no intermediate steps.
 
-## What the AST provides
+## What the AST offers
 
 The generated AST is not just for data extraction. You can:
 
-- **Inspect** the structure with `ast.display()` (formatted table with ANSI colors)
+- **Inspect** the structure with `ast.toString()` (ANSI-colored formatted table)
 - **Serialize** to JSON with `ast.toJSON()` or to binary with `ast.getBuffer()`
 - **Restore** from a buffer with `AST.fromBuffer(buffer)`
-- **Navigate** nodes with `getNode()`, `getNodeByType()`, `getOriginNodes()`, `getPathNodes()`, etc.
+- **Navigate** through nodes with `getNode()`, `getNodeByType()`, `getOriginNodes()`, `getPathNodes()`, etc.
 
 <Callout type="info">
-  Ready to start? Head to [Getting Started](/en/docs/getting-started) to install and run your first parse.
+  Ready to get started? Head to [Getting Started](/en/docs/getting-started) to install and run your first parse.
 </Callout>

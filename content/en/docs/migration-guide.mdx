@@ -1,3 +1,6 @@
+
+
+
 import { Callout } from 'nextra/components'
 
 # Migrating from v2 to v3
@@ -10,14 +13,14 @@ This guide covers the **breaking changes** introduced in url-ast v3 and how to a
 
 ## Main change: `.type` instead of `=type`
 
-The biggest breaking change in v3 is migrating type annotations from the `=` operator to the `.` operator:
+The biggest breaking change in v3 is the migration of type annotation from the `=` operator to the `.` operator:
 
 ```diff
 - const template = new Analyze('/users/:id=number')
 + const template = new Analyze('/users/:id.number')
 ```
 
-The `=` operator is now used **exclusively** to define default values:
+The `=` operator is now used **exclusively** for defining default values:
 
 ```typescript
 // v3: `.` for type, `=` for default
@@ -34,7 +37,7 @@ Parameters can now be marked as optional:
 const template = new Analyze('/users/:id/profile/:~tab')
 ```
 
-### Enum support
+### `enum` support
 
 New type to restrict values:
 
@@ -48,7 +51,7 @@ const template = new Analyze('/theme/:mode.enum[dark,light]')
 const template = new Analyze('/status/:state.enum')
 ```
 
-## Redesigned AST
+## AST redesign
 
 v3 completely redesigned the AST structure:
 
@@ -78,9 +81,9 @@ v3 migrated the build to **esbuild**, with CJS and ESM targets and **ES2024** ta
 
 - [ ] Replace `=type` with `.type` in all templates
 - [ ] Use `=` only for default values (optionally with `.type`)
-- [ ] Update type imports if you used internal enums directly
-- [ ] Verify your build target supports ES2024
+- [ ] Update type imports if you were using internal enums directly
+- [ ] Verify that your build target supports ES2024
 
 <Callout type="info">
-  See the [full CHANGELOG](https://github.com/AsterFlow/url-ast/blob/main/CHANGELOG.md) for the complete list of all changes.
+  See the [full CHANGELOG](https://github.com/AsterFlow/url-ast/blob/main/CHANGELOG.md) for a detailed list of all changes.
 </Callout>

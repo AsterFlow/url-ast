@@ -1,10 +1,9 @@
-name: Deploy Docusaurus to GitHub Pages
+name: Deploy Nextra to GitHub Pages
 
 on:
   push:
     branches:
       - docs
-      - main
 
 permissions:
   contents: read
@@ -18,43 +17,25 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout main branch
-        uses: actions/checkout@v4
-        with:
-          ref: 'main'
-          path: 'main-repo'
-
       - name: Checkout docs branch
         uses: actions/checkout@v4
-        with:
-          ref: 'docs'
-          path: 'docs-repo'
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: Install dependencies (Main Repository)
-        working-directory: ./main-repo
-        run: bun install
+      - name: Install dependencies & Build
+        run: bun install && bun run build
 
-      - name: Install dependencies (Docusaurus)
-        working-directory: ./docs-repo
-        run: bun install
-
-      - name: Build Docusaurus Site
-        working-directory: ./docs-repo
-        run: bun run build
-
-      # - name: Configure GitHub Pages
-      #   uses: actions/configure-pages@v5
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: './docs-repo/build'
+          path: './out'
 
-      # - name: Deploy to GitHub Pages
-      #   id: deployment
-      #   uses: actions/deploy-pages@v4
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

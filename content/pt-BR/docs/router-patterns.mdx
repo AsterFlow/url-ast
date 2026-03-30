@@ -1,3 +1,5 @@
+import { LiveCode } from '@app/_components/home';
+
 import { Callout } from 'nextra/components'
 
 # Sintaxes de Roteamento Suportadas
@@ -28,50 +30,41 @@ O **url-ast** oferece uma sintaxe de roteamento flexível e robusta, inspirada n
 
 ### Rota dinâmica simples
 
-```typescript
-import { Analyze } from 'url-ast'
+<LiveCode initialCode={`import { Analyze } from 'url-ast'
 
 const template = new Analyze('/users/:id')
 const parsed = new Analyze('/users/123', template)
 
 console.log(parsed.getParams())
-// { id: '123' }
-```
+// { id: '123' }`} />
 
 ### Dinâmico com type casting
 
-```typescript
-const template = new Analyze('/users/:id.number')
+<LiveCode initialCode={`const template = new Analyze('/users/:id.number')
 const parsed = new Analyze('/users/123', template)
 
 console.log(parsed.getParams())
-// { id: 123 }  ← number, não string
-```
+// { id: 123 }  ← number, não string`} />
 
 ### Sintaxe de colchetes
 
-```typescript
-const template = new Analyze('/posts/[slug]')
+<LiveCode initialCode={`const template = new Analyze('/posts/[slug]')
 const parsed = new Analyze('/posts/hello-world', template)
 
 console.log(parsed.getParams())
-// { slug: 'hello-world' }
-```
+// { slug: 'hello-world' }`} />
 
 ### Catch-all
 
-```typescript
-const template = new Analyze('/docs/[...path]')
+<LiveCode initialCode={`const template = new Analyze('/docs/[...path]')
 const parsed = new Analyze('/docs/api/reference/analyze', template)
 
 console.log(parsed.getParams())
-// { path: ['api', 'reference', 'analyze'] }
-```
+// { path: ['api', 'reference', 'analyze'] }`} />
 
 ### Catch-all opcional
 
-```typescript
-const template = new Analyze('/blog/[[...slug]]')
+<LiveCode initialCode={`const template = new Analyze('/blog/[[...slug]]')
 
 const withSlug = new Analyze('/blog/2026/03/release', template)
 console.log(withSlug.getParams())
@@ -79,43 +72,36 @@ console.log(withSlug.getParams())
 
 const noSlug = new Analyze('/blog', template)
 console.log(noSlug.getParams())
-// {}  ← rota base válida
-```
+// { slug: [] }  ← rota base válida`} />
 
 ### Query params
 
-```typescript
-const template = new Analyze('/api/posts?page.number&tags.array&active.boolean')
+<LiveCode initialCode={`const template = new Analyze('/api/posts?page.number&tags.array&active.boolean')
 const parsed = new Analyze('/api/posts?page=2&tags=web,api&active=true', template)
 
 console.log(parsed.getSearchParams())
-// { page: 2, tags: ['web', 'api'], active: true }
-```
+// { page: 2, tags: ['web', 'api'], active: true }`} />
 
 ### Fragmento
 
-```typescript
-const template = new Analyze('/page#section')
+<LiveCode initialCode={`const template = new Analyze('/page#section')
 const parsed = new Analyze('/page#introduction', template)
 
 console.log(parsed.getFragment())
-// { section: 'introduction' }
-```
+// { section: 'introduction' }`} />
 
 ### Rota completa
 
 Combinando origin, path, query e fragmento:
 
-```typescript
-const template = new Analyze('/api/users/:id.number?page.number=1&active.boolean#section')
+<LiveCode initialCode={`const template = new Analyze('/api/users/:id.number?page.number=1&active.boolean#section')
 const parsed = new Analyze('https://example.com/api/users/42?page=3&active=true#profile', template)
 
 parsed.getProtocol()      // 'https'
 parsed.getHostname()      // 'example.com'
 parsed.getParams()        // { id: 42 }
 parsed.getSearchParams()  // { page: 3, active: true }
-parsed.getFragment()      // { section: 'profile' }
-```
+parsed.getFragment()      // { section: 'profile' }`} />
 
 <Callout type="info">
   Para detalhes sobre os tipos suportados (`.number`, `.boolean`, `.array`, `.enum`), veja [Conversão de Tipos](/pt-BR/docs/type-casting).

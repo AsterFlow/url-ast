@@ -1,10 +1,13 @@
+
+
+
 import { Callout } from 'nextra/components'
 
 # Automatic Type Casting and Conversion
 
-The biggest advantage of **url-ast** is its ability to not only capture but also **type and cast** parameters directly within the route declaration. This eliminates verbose validations in your code and delivers ready-to-use data.
+The biggest advantage of **url-ast** is its ability to not only capture parameters, but also **type and convert** values directly in the route declaration. This eliminates verbose validations in your code and delivers data ready to use.
 
-To apply a cast, append the `.type` suffix right after your variable name.
+To apply a conversion, add the `.type` suffix right after your variable name.
 
 ## Supported types
 
@@ -12,10 +15,10 @@ To apply a cast, append the `.type` suffix right after your variable name.
 | :--- | :--- | :--- | :--- |
 | **String** | `.string` (or omitted) | Default behavior. Preserves the text. | `user_123` → `'user_123'` |
 | **Number** | `.number` | Converts the string to a numeric value. | `-42` → `-42` |
-| **Boolean** | `.boolean` | Infers intent and converts to boolean. | `true` or `1` → `true` |
-| **Array** | `.array` | Splits comma-separated values into a list. | `a,b,c` → `['a', 'b', 'c']` |
+| **Boolean** | `.boolean` | Analyzes intent and converts to boolean. | `true` or `1` → `true` |
+| **Array** | `.array` | Splits values by comma into a list. | `a,b,c` → `['a', 'b', 'c']` |
 | **Enum** | `.enum[op1,op2]` | Restricts values to an allowed list. | `admin` → `'admin'` |
-| **Generic enum** | `.enum` | Enum without variant restrictions. | `anything` → `'anything'` |
+| **Generic enum** | `.enum` | Enum without variant restriction. | `anything` → `'anything'` |
 
 ---
 
@@ -35,7 +38,7 @@ console.log(parsed.getParams())
 
 ### Array and Enum
 
-For scenarios where you need to receive data lists or restrict values to a specific set:
+For scenarios where you need to receive data lists or restrict access to specific values:
 
 ```typescript
 const template = new Analyze('/theme/:color.enum[dark,light]/tags/:list.array')
@@ -83,7 +86,7 @@ console.log(parsed.getParams())
 
 ---
 
-## TypeScript inference
+## TypeScript Inference
 
 TypeScript infers types automatically from the template string:
 

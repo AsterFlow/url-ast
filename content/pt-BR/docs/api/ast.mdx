@@ -1,3 +1,5 @@
+import { LiveCode } from '@app/_components/home';
+
 # Referência: AST
 
 A classe `AST` é o coração do url-ast. Ela realiza o **parse scannerless** (lexing + construção de árvore em uma única passada) e armazena os nós resultantes.
@@ -105,18 +107,16 @@ getFragmentNode(): Node | undefined
 
 ## Visualização
 
-### `display(nodes?, input?)`
+### `toString(nodes?, input?)`
 
 Retorna uma tabela formatada (com cores ANSI) representando a estrutura da AST.
 
 ```typescript
-display(nodes?: Node[], input?: string): string
+toString(nodes?: Node[], input?: string): string
 ```
 
-```typescript
-const ast = new AST('/users/:id.number?page.number')
-console.log(ast.display())
-```
+<LiveCode initialCode={`const ast = new AST('/users/:id.number?page.number')
+console.log(ast.toString())`} />
 
 ---
 
@@ -134,12 +134,10 @@ toJSON(humanReadable?: boolean): ASTJSON
 | :--- | :--- | :--- |
 | `humanReadable` | `false` | `true` usa nomes legíveis (`"Path"`, `"Number"`) em vez de códigos numéricos |
 
-```typescript
-const ast = new AST('/users/:id.number')
+<LiveCode initialCode={`const ast = new AST('/users/:id.number')
 
 ast.toJSON()       // kind: 251, type: 249
-ast.toJSON(true)   // kind: "Path", type: "Number"
-```
+ast.toJSON(true)   // kind: "Path", type: "Number"`} />
 
 ### `getBuffer()`
 
@@ -163,8 +161,6 @@ Reconstrói uma instância da AST a partir de um buffer serializado.
 static fromBuffer(buffer: Buffer): AST<string>
 ```
 
-```typescript
-const ast = new AST('/path/:x')
+<LiveCode initialCode={`const ast = new AST('/path/:x')
 const buf = ast.getBuffer()
-const restored = AST.fromBuffer(buf)
-```
+const restored = AST.fromBuffer(buf)`} />

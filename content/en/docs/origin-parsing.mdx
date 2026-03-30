@@ -1,8 +1,10 @@
+import { LiveCode } from '@app/_components/home';
+
 import { Callout } from 'nextra/components'
 
 # Extracting Protocol, Host, and Port
 
-**url-ast** goes beyond path and query string — it also fully parses the URL's **origin**, including protocol, hostname, and port.
+**url-ast** is not limited to the path and query string — it also performs full parsing of the URL's **origin**, including protocol, hostname, and port.
 
 ## Available methods
 
@@ -15,43 +17,37 @@ import { Callout } from 'nextra/components'
 
 ## Full example
 
-```typescript
-import { Analyze } from 'url-ast'
+<LiveCode initialCode={`import { Analyze } from 'url-ast'
 
 const parsed = new Analyze('https://api.example.com:8080/users/42?active=true#profile')
 
 console.log(parsed.getProtocol())  // 'https'
 console.log(parsed.getHostname())  // 'api.example.com'
 console.log(parsed.getPort())      // '8080'
-console.log(parsed.getPathname())  // '/users/42'
-```
+console.log(parsed.getPathname())  // '/users/42'`} />
 
-## Combining with a template
+## Combining with template
 
-When used with a template, the origin from the concrete URL is extracted while parameters are parsed against the model:
+When used with a template, the origin from the concrete URL is extracted while the parameters are parsed against the template:
 
-```typescript
-const template = new Analyze('/api/users/:id.number')
+<LiveCode initialCode={`const template = new Analyze('/api/users/:id.number')
 const parsed = new Analyze('https://myapp.com/api/users/99', template)
 
 parsed.getProtocol()  // 'https'
 parsed.getHostname()  // 'myapp.com'
-parsed.getParams()    // { id: 99 }
-```
+parsed.getParams()    // { id: 99 }`} />
 
 ## AST nodes
 
-Internally, the AST represents the origin with three dedicated nodes. You can access them directly:
+Internally, the AST represents the origin in three dedicated nodes. You can access them directly:
 
-```typescript
-const parsed = new Analyze('https://example.com:443/path')
+<LiveCode initialCode={`const parsed = new Analyze('https://example.com:443/path')
 const origin = parsed.ast.getOriginNodes()
 
 origin.protocol  // Node { state: OriginExpression.Protocol, ... }
 origin.hostname  // Node { state: OriginExpression.Hostname, ... }
-origin.port      // Node { state: OriginExpression.Port, ... }
-```
+origin.port      // Node { state: OriginExpression.Port, ... }`} />
 
 <Callout type="warning">
-  If the URL has no origin (e.g., `/users/42`), `getProtocol()`, `getHostname()`, and `getPort()` return `undefined`.
+  If the URL does not contain an origin (e.g., `/users/42`), the `getProtocol()`, `getHostname()`, and `getPort()` methods return `undefined`.
 </Callout>

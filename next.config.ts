@@ -1,5 +1,7 @@
 import bundleAnalyzer from '@next/bundle-analyzer'
 import nextra from 'nextra'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 
 const withNextra = nextra({
   defaultShowCopyCode: true,
@@ -15,10 +17,13 @@ const withBundleAnalyzer = bundleAnalyzer({
 const nextConfig = withBundleAnalyzer(
   withNextra({
     reactStrictMode: true,
-    // output: 'export',
+    output: 'export',
     i18n: {
       locales: ['en', 'pt-BR'],
       defaultLocale: 'en'
+    },
+    env: {
+      URL_AST_TYPES: readFileSync(join(process.cwd(), 'node_modules/url-ast/dist/types/index.d.ts'), 'utf-8')
     },
     webpack(config) {
       // rule.exclude doesn't work starting from Next.js 15

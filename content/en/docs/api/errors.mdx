@@ -1,6 +1,8 @@
+import { LiveCode } from '@app/_components/home';
+
 # Error Handling
 
-url-ast reports parse errors in a structured way, without throwing exceptions. This allows you to inspect issues and decide how to handle them.
+url-ast reports parse errors in a structured way, without throwing exceptions. This allows you to inspect problems and decide how to handle them.
 
 ## `ErrorLog`
 
@@ -10,7 +12,7 @@ Each parse error is represented by an `ErrorLog` instance:
 import { ErrorLog } from 'url-ast'
 ```
 
-The `ErrorLog` class stores information about errors found during parsing, including position and context.
+The `ErrorLog` class stores information about the error found during parsing, including position and context.
 
 ---
 
@@ -18,44 +20,38 @@ The `ErrorLog` class stores information about errors found during parsing, inclu
 
 ### `hasErrors()`
 
-Checks whether errors exist in the instance:
+Checks if there are errors in the instance:
 
-```typescript
-const parsed = new Analyze('/users/[unclosed')
+<LiveCode initialCode={`const parsed = new Analyze('/users/[unclosed')
 
 if (parsed.hasErrors()) {
   console.log('Parse errors found!')
-}
-```
+}`} />
 
-### `displayErrors()`
+### `formatErrors()`
 
-Returns a formatted, human-readable string with details of all errors:
+Returns a formatted and readable string with details of all errors:
 
-```typescript
-const parsed = new Analyze('/users/[unclosed')
+<LiveCode initialCode={`const parsed = new Analyze('/users/[unclosed')
 
 if (parsed.hasErrors()) {
-  console.log(parsed.displayErrors())
+  console.log(parsed.formatErrors())
   // Displays a detailed message about the unclosed bracket
-}
-```
+}`} />
 
 ---
 
 ## Accessing errors directly
 
-Errors are available on the `errors` property of both `Analyze` and `AST` instances:
+Errors are available in the `errors` property of both the `Analyze` and `AST` instances:
 
-```typescript
-const parsed = new Analyze('/invalid/[route')
+<LiveCode initialCode={`const parsed = new Analyze('/invalid/[route')
 
 // Via Analyze
 console.log(parsed.errors)
 
 // Via AST
-console.log(parsed.ast.errors)
-```
+console.log(parsed.ast.errors)`} />
 
 ---
 
@@ -63,19 +59,19 @@ console.log(parsed.ast.errors)
 
 | Scenario | Example | Description |
 | :--- | :--- | :--- |
-| Unclosed bracket | `/users/[id` | Missing `]` in dynamic segment |
-| Malformed catch-all | `/docs/[..slug]` | Missing three dots (`...`) |
-| Invalid type | `/:id.invalid` | Unrecognized type annotation |
+| Unclosed bracket | `/users/[id` | Missing `]` in the dynamic segment |
+| Malformed catch-all | `/docs/[..slug]` | Missing the three dots (`...`) |
+| Invalid type | `/:id.invalid` | Unrecognized type in annotation |
 
 ---
 
 ## Error handling in production
 
-url-ast doesn't throw exceptions — it **accumulates** errors and continues parsing as far as possible. This allows you to:
+url-ast does not throw exceptions — it **accumulates** errors and continues parsing as far as possible. This allows you to:
 
 1. Always get a partial result, even with malformed URLs
 2. Inspect errors and decide how to handle them
-3. Display friendly error messages to the user
+3. Display user-friendly error messages
 
 ```typescript
 import { Analyze } from 'url-ast'
@@ -84,7 +80,7 @@ function parseRoute(url: string, template: Analyze) {
   const result = new Analyze(url, template)
 
   if (result.hasErrors()) {
-    console.warn('Problematic URL:', result.displayErrors())
+    console.warn('URL with issues:', result.formatErrors())
     // Decide: return partial, fallback, or reject
   }
 

@@ -1,3 +1,5 @@
+
+
 # Serialização e Cache com Buffer Binário
 
 O url-ast oferece serialização binária completa para a AST e para instâncias de `Analyze`, permitindo armazenar, transmitir e restaurar resultados de parse de forma eficiente.
@@ -26,7 +28,7 @@ const buffer = ast.getBuffer()
 ```typescript
 const restored = AST.fromBuffer(buffer)
 
-console.log(restored.display())
+console.log(restored.toString())
 // Mesma árvore que a original
 ```
 

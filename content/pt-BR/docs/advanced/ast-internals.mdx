@@ -1,3 +1,5 @@
+
+
 # Arquitetura Interna do Parser e da AST
 
 Esta página explica a arquitetura interna do parser e a estrutura da árvore sintática abstrata (AST) gerada pelo url-ast.
@@ -115,11 +117,11 @@ Isso é usado pelo método `ast.toJSON(true)` para produzir uma versão human-re
 
 ## Visualizando a AST
 
-O método `display()` gera uma tabela formatada:
+O método `toString()` gera uma tabela formatada:
 
 ```typescript
 const ast = new AST('/users/:id.number?page.number#section')
-console.log(ast.display())
+console.log(ast.toString())
 ```
 
 O output inclui cores ANSI para diferenciar segmentos estáticos, dinâmicos, tipos e delimitadores.

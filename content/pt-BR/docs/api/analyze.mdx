@@ -1,3 +1,5 @@
+import { LiveCode } from '@app/_components/home';
+
 # Referência: Analyze
 
 A classe `Analyze` é a **API de alto nível** do url-ast. Ela recebe uma URL (ou template), constrói a AST internamente, e expõe métodos para extrair parâmetros, query, fragmento, origin e metadados da rota.
@@ -40,12 +42,10 @@ getParams(): AnalyzeParamsResult
 - **Sem template:** retorna `string[]` com os nomes dos parâmetros declarados.
 - **Com template:** retorna um objeto tipado com os valores convertidos.
 
-```typescript
-const template = new Analyze('/users/:id.number/:name')
+<LiveCode initialCode={`const template = new Analyze('/users/:id.number/:name')
 const parsed = new Analyze('/users/42/john', template)
 
-parsed.getParams() // { id: 42, name: 'john' }
-```
+parsed.getParams() // { id: 42, name: 'john' }`} />
 
 ### `getSearchParams()`
 
@@ -58,13 +58,11 @@ getSearchParams(): AnalyzeSearchParamsResult
 - **Sem template:** retorna `Map<string, string | string[]>`.
 - **Com template:** retorna um objeto tipado.
 
-```typescript
-const template = new Analyze('/search?q&page.number&tags.array')
+<LiveCode initialCode={`const template = new Analyze('/search?q&page.number&tags.array')
 const parsed = new Analyze('/search?q=ts&page=2&tags=web,api', template)
 
 parsed.getSearchParams()
-// { q: 'ts', page: 2, tags: ['web', 'api'] }
-```
+// { q: 'ts', page: 2, tags: ['web', 'api'] }`} />
 
 ### `getFragment()`
 
@@ -74,12 +72,10 @@ Extrai o fragmento (hash) da URL.
 getFragment(): AnalyzeFragmentResult
 ```
 
-```typescript
-const template = new Analyze('/page#section')
+<LiveCode initialCode={`const template = new Analyze('/page#section')
 const parsed = new Analyze('/page#intro', template)
 
-parsed.getFragment() // { section: 'intro' }
-```
+parsed.getFragment() // { section: 'intro' }`} />
 
 ### `getStaticProps()`
 
@@ -89,12 +85,10 @@ Retorna propriedades de segmentos estáticos de rotas com colchetes e catch-all.
 getStaticProps(): Record<string, string | string[]>
 ```
 
-```typescript
-const template = new Analyze('/docs/[...path]')
+<LiveCode initialCode={`const template = new Analyze('/docs/[...path]')
 const parsed = new Analyze('/docs/api/reference/analyze', template)
 
-parsed.getStaticProps() // { path: ['api', 'reference', 'analyze'] }
-```
+parsed.getStaticProps() // { path: ['api', 'reference', 'analyze'] }`} />
 
 ---
 
@@ -126,13 +120,11 @@ getHostname(): string | undefined
 getPort(): string | undefined
 ```
 
-```typescript
-const p = new Analyze('https://api.example.com:8080/v1/users')
+<LiveCode initialCode={`const p = new Analyze('https://api.example.com:8080/v1/users')
 p.getProtocol() // 'https'
 p.getHostname() // 'api.example.com'
 p.getPort()     // '8080'
-p.getPathname() // '/v1/users'
-```
+p.getPathname() // '/v1/users'`} />
 
 ---
 
@@ -146,13 +138,11 @@ Associa um template a uma instância existente. Retorna uma nova instância tipa
 setParser<S extends AnalyzeChain>(base: S): AnalyzeInstance<string, S>
 ```
 
-```typescript
-const url = new Analyze('/users/42')
+<LiveCode initialCode={`const url = new Analyze('/users/42')
 const template = new Analyze('/users/:id.number')
 const parsed = url.setParser(template)
 
-parsed.getParams() // { id: 42 }
-```
+parsed.getParams() // { id: 42 }`} />
 
 ---
 
@@ -164,12 +154,12 @@ parsed.getParams() // { id: 42 }
 hasErrors(errors?: ErrorLog[]): boolean
 ```
 
-### `displayErrors()`
+### `formatErrors()`
 
 Retorna uma string formatada com os erros encontrados.
 
 ```typescript
-displayErrors(errors?: ErrorLog[]): string
+formatErrors(errors?: ErrorLog[]): string
 ```
 
 ---
@@ -201,8 +191,6 @@ static create<P extends string>(input: P): AnalyzeInstance<P, undefined>
 static create<P extends string, B extends AnalyzeChain>(input: P, base: B): AnalyzeInstance<P, B>
 ```
 
-```typescript
-const a = Analyze.create('/path/:x.string')
+<LiveCode initialCode={`const a = Analyze.create('/path/:x.string')
 const buf = a.getBuffer()
-const restored = Analyze.fromBuffer(buf)
-```
+const restored = Analyze.fromBuffer(buf)`} />

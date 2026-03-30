@@ -1,8 +1,10 @@
+import { LiveCode } from '@app/_components/home';
+
 import { Callout } from 'nextra/components'
 
 # Supported Routing Syntaxes
 
-**url-ast** offers a flexible and robust routing syntax, inspired by the most modern frameworks. You can use both the conventional colon pattern (`:parameter`) and the bracket syntax (`[parameter]`).
+**url-ast** offers a flexible and robust routing syntax, inspired by the most modern frameworks out there. You can use both the conventional colon pattern (`:parameter`) and the bracket syntax (`[parameter]`).
 
 ## Supported patterns
 
@@ -10,68 +12,59 @@ import { Callout } from 'nextra/components'
 | :--- | :--- | :--- | :--- |
 | **Static** | `/exact/path` | `/about/contact` | Requires exact match. No variables captured. |
 | **Dynamic (colon)** | `/:param` | `/users/:id` | Captures a single URL segment. |
-| **Dynamic (bracket)** | `/[param]` | `/posts/[slug]` | Bracket syntax, Next.js/SvelteKit-style. |
-| **Dynamic with type** | `/:param.type` or `/[param.type]` | `/users/:id.number` | Captures and auto-converts the type. |
+| **Dynamic (bracket)** | `/[param]` | `/posts/[slug]` | Bracket syntax, Next.js/SvelteKit style. |
+| **Dynamic with type** | `/:param.type` or `/[param.type]` | `/users/:id.number` | Captures and converts the type automatically. |
 | **Optional** | `/:~param` or `/[~param]` | `/posts/:id/comments/:~commentId` | Parameter can be `undefined`. |
 | **Catch-all** | `/[...slug]` | `/docs/[...path]` | Captures multiple segments as `string[]`. |
 | **Optional catch-all** | `/[[...slug]]` | `/blog/[[...slug]]` | Base route remains valid without parameters. |
 | **Query params** | `?param` | `?sort=desc&limit=10` | Captures query string arguments. |
 | **Query with type** | `?param.type` | `?page.number&active.boolean` | Query params with type casting. |
 | **Query with default** | `?param.type=value` | `?page.number=1` | Query with type and default value. |
-| **Fragment (hash)** | `#section` | `#introduction` | Captures the URL anchor. |
+| **Fragment (hash)** | `#section` | `#introduction` | Captures the anchor at the end of the URL. |
 
 <Callout type="default">
-  In traditional API environments, fragments (`#`) are generally not sent by the browser to the server.
+  In traditional API environments, fragments (`#`) are typically not sent by the browser to the server.
 </Callout>
 
 ## Practical examples
 
 ### Simple dynamic route
 
-```typescript
-import { Analyze } from 'url-ast'
+<LiveCode initialCode={`import { Analyze } from 'url-ast'
 
 const template = new Analyze('/users/:id')
 const parsed = new Analyze('/users/123', template)
 
 console.log(parsed.getParams())
-// { id: '123' }
-```
+// { id: '123' }`} />
 
 ### Dynamic with type casting
 
-```typescript
-const template = new Analyze('/users/:id.number')
+<LiveCode initialCode={`const template = new Analyze('/users/:id.number')
 const parsed = new Analyze('/users/123', template)
 
 console.log(parsed.getParams())
-// { id: 123 }  ← number, not string
-```
+// { id: 123 }  ← number, not string`} />
 
 ### Bracket syntax
 
-```typescript
-const template = new Analyze('/posts/[slug]')
+<LiveCode initialCode={`const template = new Analyze('/posts/[slug]')
 const parsed = new Analyze('/posts/hello-world', template)
 
 console.log(parsed.getParams())
-// { slug: 'hello-world' }
-```
+// { slug: 'hello-world' }`} />
 
 ### Catch-all
 
-```typescript
-const template = new Analyze('/docs/[...path]')
+<LiveCode initialCode={`const template = new Analyze('/docs/[...path]')
 const parsed = new Analyze('/docs/api/reference/analyze', template)
 
 console.log(parsed.getParams())
-// { path: ['api', 'reference', 'analyze'] }
-```
+// { path: ['api', 'reference', 'analyze'] }`} />
 
 ### Optional catch-all
 
-```typescript
-const template = new Analyze('/blog/[[...slug]]')
+<LiveCode initialCode={`const template = new Analyze('/blog/[[...slug]]')
 
 const withSlug = new Analyze('/blog/2026/03/release', template)
 console.log(withSlug.getParams())
@@ -79,43 +72,36 @@ console.log(withSlug.getParams())
 
 const noSlug = new Analyze('/blog', template)
 console.log(noSlug.getParams())
-// {}  ← base route is valid
-```
+// { slug: [] }  ← base route still valid`} />
 
 ### Query params
 
-```typescript
-const template = new Analyze('/api/posts?page.number&tags.array&active.boolean')
+<LiveCode initialCode={`const template = new Analyze('/api/posts?page.number&tags.array&active.boolean')
 const parsed = new Analyze('/api/posts?page=2&tags=web,api&active=true', template)
 
 console.log(parsed.getSearchParams())
-// { page: 2, tags: ['web', 'api'], active: true }
-```
+// { page: 2, tags: ['web', 'api'], active: true }`} />
 
 ### Fragment
 
-```typescript
-const template = new Analyze('/page#section')
+<LiveCode initialCode={`const template = new Analyze('/page#section')
 const parsed = new Analyze('/page#introduction', template)
 
 console.log(parsed.getFragment())
-// { section: 'introduction' }
-```
+// { section: 'introduction' }`} />
 
-### Full URL
+### Complete route
 
 Combining origin, path, query, and fragment:
 
-```typescript
-const template = new Analyze('/api/users/:id.number?page.number=1&active.boolean#section')
+<LiveCode initialCode={`const template = new Analyze('/api/users/:id.number?page.number=1&active.boolean#section')
 const parsed = new Analyze('https://example.com/api/users/42?page=3&active=true#profile', template)
 
 parsed.getProtocol()      // 'https'
 parsed.getHostname()      // 'example.com'
 parsed.getParams()        // { id: 42 }
 parsed.getSearchParams()  // { page: 3, active: true }
-parsed.getFragment()      // { section: 'profile' }
-```
+parsed.getFragment()      // { section: 'profile' }`} />
 
 <Callout type="info">
   For details on supported types (`.number`, `.boolean`, `.array`, `.enum`), see [Type Casting](/en/docs/type-casting).

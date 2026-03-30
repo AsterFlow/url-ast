@@ -5,6 +5,33 @@ theme:
   copyPage: false
 ---
 
-import { UrlAstHome } from '@app/_components/url-ast-home'
+import { Hero, LiveParser, Features, LiveCode } from '@app/_components/home'
 
-<UrlAstHome lang={props.params.lang} />
+<Hero 
+  tagline="Typed URL parsing, distilled."
+  description="Parse URLs into abstract syntax trees with automatic type casting and full TypeScript inference."
+  ctaText="Get started"
+  ctaHref="/en/docs/getting-started"
+  npmText="View on npm"
+/>
+
+<LiveParser 
+  lang="en"
+  title="url-ast live parser"
+  inputPlaceholder="/users/:id.number?active.boolean#section"
+  legendTitle="Hover over any segment to learn more"
+  errorsTitle="Parsing Errors"
+/>
+
+<Features>
+  <Features.Card title="Type casting" description="Automatic conversion to number, boolean, array, enum — from the template." />
+  <Features.Card title="TypeScript inference" description="Full type inference from template string literals at compile time." />
+  <Features.Card title="Scannerless AST" description="Lexing and tree construction in a single pass, zero intermediate steps." />
+  <Features.Card title="Binary serialization" description="Serialize and restore ASTs via Buffer for caching and transmission." />
+</Features>
+
+<LiveCode initialCode={`const url = new Analyze('/users/42')
+const template = new Analyze('/users/:id.number')
+const parsed = url.setParser(template)
+ 
+parsed.getParams()`} />

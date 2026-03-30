@@ -13,9 +13,6 @@ import { Head } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
 import type { ReactNode } from 'react'
 
-// Lembre-se de renomear/atualizar o seu componente de ícone
-// import { UrlAstIcon } from '@app/_icons'
-import nextConfig from '../../next.config'
 import { getDictionary } from '../_dictionaries/get-dictionary'
 import '../globals.css'
 
@@ -44,8 +41,8 @@ type LayoutProps = Readonly<{
 
 export default async function RootLayout({ children, params }: LayoutProps) {
   const { lang } = await params
-  const allowLangs = JSON.parse(nextConfig.env!.NEXTRA_LOCALES as string) as string[]
-  
+  const allowLangs = JSON.parse(process.env.NEXTRA_LOCALES!) as string[]
+
   if (!allowLangs.includes(lang)) {
     redirect('/pt-BR')
   }

@@ -1,3 +1,5 @@
+import { LiveCode } from '@app/_components/home';
+
 import { Callout } from 'nextra/components'
 
 # Extraindo Protocolo, Host e Porta
@@ -15,42 +17,36 @@ O **url-ast** não se limita ao caminho e query string — ele também faz parse
 
 ## Exemplo completo
 
-```typescript
-import { Analyze } from 'url-ast'
+<LiveCode initialCode={`import { Analyze } from 'url-ast'
 
 const parsed = new Analyze('https://api.example.com:8080/users/42?active=true#profile')
 
 console.log(parsed.getProtocol())  // 'https'
 console.log(parsed.getHostname())  // 'api.example.com'
 console.log(parsed.getPort())      // '8080'
-console.log(parsed.getPathname())  // '/users/42'
-```
+console.log(parsed.getPathname())  // '/users/42'`} />
 
 ## Combinando com template
 
 Quando usado com um template, a origin da URL concreta é extraída enquanto os parâmetros são parseados contra o modelo:
 
-```typescript
-const template = new Analyze('/api/users/:id.number')
+<LiveCode initialCode={`const template = new Analyze('/api/users/:id.number')
 const parsed = new Analyze('https://myapp.com/api/users/99', template)
 
 parsed.getProtocol()  // 'https'
 parsed.getHostname()  // 'myapp.com'
-parsed.getParams()    // { id: 99 }
-```
+parsed.getParams()    // { id: 99 }`} />
 
 ## Nós da AST
 
 Internamente, a AST representa a origin em três nós dedicados. Você pode acessá-los diretamente:
 
-```typescript
-const parsed = new Analyze('https://example.com:443/path')
+<LiveCode initialCode={`const parsed = new Analyze('https://example.com:443/path')
 const origin = parsed.ast.getOriginNodes()
 
 origin.protocol  // Node { state: OriginExpression.Protocol, ... }
 origin.hostname  // Node { state: OriginExpression.Hostname, ... }
-origin.port      // Node { state: OriginExpression.Port, ... }
-```
+origin.port      // Node { state: OriginExpression.Port, ... }`} />
 
 <Callout type="warning">
   Se a URL não contiver origin (ex: `/users/42`), os métodos `getProtocol()`, `getHostname()` e `getPort()` retornam `undefined`.

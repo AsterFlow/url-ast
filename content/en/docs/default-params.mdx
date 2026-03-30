@@ -1,8 +1,11 @@
+
+
+
 import { Callout } from 'nextra/components'
 
 # Setting Default Values for Parameters
 
-The `=` operator lets you define **default values** for query parameters and route variables. When the value is not provided in the concrete URL, the default is used automatically.
+The `=` operator allows you to define **default values** for query parameters and route variables. When the value is not provided in the concrete URL, the default is used automatically.
 
 ## Syntax
 
@@ -37,7 +40,7 @@ console.log(parsed.getSearchParams())
 
 ## Multiple defaults
 
-Combine several parameters with defaults in a single route:
+Combine multiple parameters with defaults in the same route:
 
 ```typescript
 const template = new Analyze('/api/products?page.number=1&limit.number=20&sort=name')
@@ -59,7 +62,7 @@ console.log(parsed.getSearchParams())
 // { q: 'typescript', page: 1, descending: false }
 ```
 
-## TypeScript inference
+## TypeScript Inference
 
 The inferred type reflects the type declared with `.type`, regardless of the default value:
 
@@ -71,5 +74,5 @@ type Route = ParsePath<'/search?q&page.number=1&limit.number=10'>
 ```
 
 <Callout type="info">
-  The `=` operator in v3 is used **exclusively** for default values. Type annotations use the `.` operator (e.g., `.number`, `.boolean`). See the [Migration Guide](/en/docs/migration-guide) for details.
+  The `=` operator in v3 is used **exclusively** for default values. Type annotation uses the `.` operator (e.g., `.number`, `.boolean`). See the [Migration Guide](/en/docs/migration-guide) for details.
 </Callout>
