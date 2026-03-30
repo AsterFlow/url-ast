@@ -14,10 +14,17 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true'
 })
 
-const nextConfig = withBundleAnalyzer(
+const repositorySubpath = '/url-ast'
+
+const nextConfiguration = withBundleAnalyzer(
   withNextra({
     reactStrictMode: true,
     output: 'export',
+    basePath: repositorySubpath,
+    assetPrefix: repositorySubpath, 
+    images: {
+      unoptimized: true
+    },
     i18n: {
       locales: ['en', 'pt-BR'],
       defaultLocale: 'en'
@@ -25,13 +32,13 @@ const nextConfig = withBundleAnalyzer(
     env: {
       URL_AST_TYPES: readFileSync(join(process.cwd(), 'node_modules/url-ast/dist/types/index.d.ts'), 'utf-8')
     },
-    webpack(config) {
-      // rule.exclude doesn't work starting from Next.js 15
-      const { test: _test, ...imageLoaderOptions } = config.module.rules.find(
-        // @ts-expect-error -- fixme
-        rule => rule.test?.test?.('.svg')
+    webpack(webpackConfiguration) {
+      const { test: testLoader, ...imageLoaderOptions } = webpackConfiguration.module.rules.find(
+        // @ts-expect-error -- O Next.js possui tipagens confusas para essa regra interna
+        ruleTarget => ruleTarget.test?.test?.('.svg')
       )
-      config.module.rules.push({
+      
+      webpackConfiguration.module.rules.push({
         test: /\.svg$/,
         oneOf: [
           {
@@ -41,7 +48,8 @@ const nextConfig = withBundleAnalyzer(
           imageLoaderOptions
         ]
       })
-      return config
+      
+      return webpackConfiguration
     },
     turbopack: {
       rules: {
@@ -52,11 +60,9 @@ const nextConfig = withBundleAnalyzer(
       }
     },
     experimental: {
-      optimizePackageImports: [
-        // '@app/_icons'
-      ]
+      optimizePackageImports: []
     }
   })
 )
 
-export default nextConfig
+export default nextConfiguration
