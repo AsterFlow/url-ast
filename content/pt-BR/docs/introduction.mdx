@@ -1,0 +1,53 @@
+import { Callout } from 'nextra/components'
+
+# O que é o url-ast?
+
+O **url-ast** é um parser de URLs que transforma qualquer URL em uma **Árvore Sintática Abstrata (AST)**, permitindo que você extraia e manipule cada componente — caminho, parâmetros, query string, fragmento e origin — de forma estruturada e totalmente tipada.
+
+## Por que url-ast?
+
+| Característica | `URLSearchParams` | `path-to-regexp` | **url-ast** |
+| :--- | :---: | :---: | :---: |
+| Parse de path params | ❌ | ✅ | ✅ |
+| Parse de query params | ✅ (strings) | ❌ | ✅ (tipado) |
+| Parse de fragmento | ❌ | ❌ | ✅ |
+| Parse de origin (proto/host/port) | parcial | ❌ | ✅ |
+| **Type casting** automático (`.number`, `.boolean`, `.array`, `.enum`) | ❌ | ❌ | ✅ |
+| **Inferência TypeScript** do template literal | ❌ | ❌ | ✅ |
+| AST inspecionável | ❌ | ❌ | ✅ |
+| Serialização binária (`Buffer`) | ❌ | ❌ | ✅ |
+
+## Conceito central
+
+O fluxo de trabalho do url-ast gira em torno de dois conceitos:
+
+1. **Template (modelo):** Uma string que descreve a *forma* esperada da URL — quais segmentos são dinâmicos, quais tipos esperar, e quais query params existem.
+2. **URL concreta:** A URL real que será analisada contra o template.
+
+```typescript
+import { Analyze } from 'url-ast'
+
+// 1. Declares the template
+const template = new Analyze('/users/:id.number?active.boolean')
+
+// 2. Parses a real URL against the template
+const result = new Analyze('/users/42?active=true', template)
+
+result.getParams()        // { id: 42 }
+result.getSearchParams()  // { active: true }
+```
+
+O parser é **scannerless** — lexing e construção da árvore acontecem em uma única passada, sem etapas intermediárias.
+
+## O que a AST oferece
+
+A AST gerada não é apenas para extração de dados. Você pode:
+
+- **Inspecionar** a estrutura com `ast.display()` (tabela formatada com cores ANSI)
+- **Serializar** para JSON com `ast.toJSON()` ou para binário com `ast.getBuffer()`
+- **Restaurar** a partir de um buffer com `AST.fromBuffer(buffer)`
+- **Navegar** pelos nós com `getNode()`, `getNodeByType()`, `getOriginNodes()`, `getPathNodes()`, etc.
+
+<Callout type="info">
+  Pronto para começar? Vá para [Primeiros Passos](/pt-BR/docs/getting-started) para instalar e rodar seu primeiro parse.
+</Callout>

@@ -1,0 +1,170 @@
+# Reference: AST
+
+The `AST` class is the heart of url-ast. It performs **scannerless parsing** (lexing + tree construction in a single pass) and stores the resulting nodes.
+
+## Constructor
+
+```typescript
+new AST<Path extends string>(input: Path, options?: ASTOptionalOptions)
+```
+
+> In most cases, you don't create the AST directly — it's generated automatically by the `Analyze` constructor. Use it directly only when you want to work with the tree without the high-level layer.
+
+---
+
+## Properties
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `input` | `string` | The original URL |
+| `nodes` | `Node[]` | Root tree nodes |
+| `errors` | `ErrorLog[]` | Parse errors |
+| `expressions` | `Set<number>` | Expression types found |
+
+---
+
+## Node queries
+
+### `getNode(idOrName, input?)`
+
+Finds a node by numeric index or by text content match.
+
+```typescript
+getNode(idOrName: string | number, input?: string): Node | undefined
+```
+
+### `getNodeByType(type, position?)`
+
+Returns the nth node matching a given expression type.
+
+```typescript
+getNodeByType(type: AllValues, position?: number): Node | undefined
+```
+
+### `getContent(node, input?)`
+
+Returns the raw substring between a node's start and end offsets.
+
+```typescript
+getContent(node: Node, input?: string): string
+```
+
+### `getValue(idOrName, input?)`
+
+Returns the value (substring) after a parameter or variable node.
+
+```typescript
+getValue(idOrName: string | number, input?: string): string | undefined
+```
+
+### `getType(idOrName, input?)`
+
+Returns the declared type of the value token following a parameter node.
+
+```typescript
+getType(idOrName: string | number, input?: string)
+```
+
+---
+
+## Nodes by semantic layer
+
+### `getOriginNodes()`
+
+Returns origin layer nodes (Protocol, Hostname, Port).
+
+```typescript
+getOriginNodes(): { protocol?: Node, hostname?: Node, port?: Node }
+```
+
+### `getPathNodes()`
+
+Returns path layer nodes (static and dynamic segments).
+
+```typescript
+getPathNodes(): Node[]
+```
+
+### `getQueryNode()`
+
+Returns the query delimiter node (`?`), whose `body` contains query parameters.
+
+```typescript
+getQueryNode(): Node | undefined
+```
+
+### `getFragmentNode()`
+
+Returns the fragment delimiter node (`#`), whose `body` contains the hash payload.
+
+```typescript
+getFragmentNode(): Node | undefined
+```
+
+---
+
+## Visualization
+
+### `display(nodes?, input?)`
+
+Returns a formatted table (with ANSI colors) representing the AST structure.
+
+```typescript
+display(nodes?: Node[], input?: string): string
+```
+
+```typescript
+const ast = new AST('/users/:id.number?page.number')
+console.log(ast.display())
+```
+
+---
+
+## Serialization
+
+### `toJSON(humanReadable?)`
+
+Converts the AST to a hierarchical JSON object, grouped by URL semantic layers.
+
+```typescript
+toJSON(humanReadable?: boolean): ASTJSON
+```
+
+| Parameter | Default | Description |
+| :--- | :--- | :--- |
+| `humanReadable` | `false` | `true` uses readable names (`"Path"`, `"Number"`) instead of numeric codes |
+
+```typescript
+const ast = new AST('/users/:id.number')
+
+ast.toJSON()       // kind: 251, type: 249
+ast.toJSON(true)   // kind: "Path", type: "Number"
+```
+
+### `getBuffer()`
+
+Serializes the AST into a binary buffer.
+
+```typescript
+getBuffer(): Buffer
+```
+
+**Buffer layout:**
+1. Root node count (2 bytes, LE)
+2. URL byte length (4 bytes, LE)
+3. Node data (variable, recursive)
+4. Original URL string (UTF-8)
+
+### `AST.fromBuffer(buffer)`
+
+Rebuilds an AST instance from a serialized buffer.
+
+```typescript
+static fromBuffer(buffer: Buffer): AST<string>
+```
+
+```typescript
+const ast = new AST('/path/:x')
+const buf = ast.getBuffer()
+const restored = AST.fromBuffer(buf)
+```

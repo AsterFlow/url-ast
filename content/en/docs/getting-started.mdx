@@ -1,0 +1,104 @@
+import { Callout, Steps } from 'nextra/components'
+import { TerminalCommandSelector } from '@/components/ui/codeblock'
+
+# Installation and First Parse
+
+Welcome to **url-ast**! This guide will show you how to install the library and extract your first typed parameters from a URL in just a few minutes.
+
+## Requirements
+
+- **Node.js** ≥ 20
+- **TypeScript** ^5 (peer dependency) for type inference
+
+## Installation
+
+Add **url-ast** using your preferred package manager:
+
+<TerminalCommandSelector commandOptions={[
+  { tabName: 'npm', commandString: 'npm add url-ast' }, 
+  { tabName: 'pnpm', commandString: 'pnpm add url-ast' }, 
+  { tabName: 'yarn', commandString: 'yarn add url-ast' }, 
+  { tabName: 'bun', commandString: 'bun add url-ast' }
+]} />
+
+## First parse
+
+<Steps>
+
+### Define a route template
+
+The template acts as a contract: it describes the dynamic segments of the URL (`:name` or `[name]`), their types (`.number`, `.boolean`, etc.), and the expected query parameters.
+
+```typescript
+import { Analyze } from 'url-ast'
+
+const template = new Analyze('/users/:id.number')
+```
+
+### Parse the actual URL
+
+Pass the concrete URL along with the template. url-ast will handle matching and type casting automatically.
+
+```typescript
+const parsed = new Analyze('/users/123', template)
+```
+
+### Access the structured data
+
+Parameters arrive typed and ready to use:
+
+```typescript
+console.log(parsed.getParams())
+// { id: 123 }  ← number, not string!
+```
+
+### Combine path + query params
+
+Add query parameters to the template to type everything at once:
+
+```typescript
+const template = new Analyze('/users/:id.number?active.boolean&role.enum[admin,user]')
+const parsed = new Analyze('/users/42?active=true&role=admin', template)
+
+console.log(parsed.getParams())        // { id: 42 }
+console.log(parsed.getSearchParams())  // { active: true, role: 'admin' }
+```
+
+### Optional: inspect the AST
+
+Need to debug or understand how the parser interpreted the route? Visualize the Abstract Syntax Tree:
+
+```typescript
+console.log(parsed.ast.display())
+```
+
+</Steps>
+
+## Usage alternatives
+
+### Factory `Analyze.create`
+
+For automatic TypeScript type inference:
+
+```typescript
+const template = Analyze.create('/posts/:slug.string?page.number')
+const parsed = Analyze.create('/posts/hello-world?page=3', template)
+```
+
+### `setParser` — set template later
+
+```typescript
+const url = new Analyze('/users/42')
+const template = new Analyze('/users/:id.number')
+const parsed = url.setParser(template)
+
+parsed.getParams() // { id: 42 }
+```
+
+## Next steps
+
+<Callout type="info">
+  Explore the [Router Patterns](/en/docs/router-patterns) section for all supported syntaxes,
+  [Type Casting](/en/docs/type-casting) for details on each type,
+  and [Optional Params](/en/docs/optional-params) for the `~` operator.
+</Callout>

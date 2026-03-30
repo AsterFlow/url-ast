@@ -1,0 +1,76 @@
+# Serialization and Caching with Binary Buffers
+
+url-ast offers full binary serialization for the AST and for `Analyze` instances, allowing you to store, transmit, and restore parse results efficiently.
+
+## Why serialize?
+
+- **Cache:** Store pre-processed ASTs on disk, Redis, or a database
+- **Transmission:** Send trees between processes or services via binary buffer
+- **Performance:** Reconstructing from a buffer is faster than re-parsing the URL
+
+## AST: `getBuffer()` / `fromBuffer()`
+
+### Serialize
+
+```typescript
+import { AST } from 'url-ast'
+
+const ast = new AST('/users/:id.number?page.number')
+const buffer = ast.getBuffer()
+
+// `buffer` is a Node.js Buffer ready to save or transmit
+```
+
+### Restore
+
+```typescript
+const restored = AST.fromBuffer(buffer)
+
+console.log(restored.display())
+// Same tree as the original
+```
+
+### Buffer layout
+
+| Offset | Size | Content |
+| :--- | :--- | :--- |
+| 0 | 2 bytes (LE) | Root node count |
+| 2 | 4 bytes (LE) | URL byte length (UTF-8) |
+| 6 | variable | Node data (recursive) |
+| end | `urlLength` bytes | Original URL string (UTF-8) |
+
+Each node is serialized recursively: first its data (state, offsets, etc.), then its child nodes (`body`).
+
+## Analyze: `getBuffer()` / `fromBuffer()`
+
+The `Analyze` class also supports serialization, encapsulating the AST and metadata:
+
+```typescript
+import { Analyze } from 'url-ast'
+
+const template = Analyze.create('/api/users/:id.number')
+
+// Serialize
+const buf = template.getBuffer()
+
+// Restore
+const restored = Analyze.fromBuffer(buf)
+```
+
+## Practical example: template caching
+
+```typescript
+import { Analyze } from 'url-ast'
+import { readFileSync, writeFileSync } from 'fs'
+
+// First run: create and save
+const template = new Analyze('/api/:version/resources/:id.number?fields.array')
+writeFileSync('template.bin', template.getBuffer())
+
+// Subsequent runs: restore from cache
+const cached = Analyze.fromBuffer(readFileSync('template.bin'))
+const result = new Analyze('/api/v2/resources/42?fields=name,email', cached)
+
+result.getParams()       // { version: 'v2', id: 42 }
+result.getSearchParams() // { fields: ['name', 'email'] }
+```

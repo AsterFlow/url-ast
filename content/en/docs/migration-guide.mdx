@@ -1,0 +1,86 @@
+import { Callout } from 'nextra/components'
+
+# Migrating from v2 to v3
+
+This guide covers the **breaking changes** introduced in url-ast v3 and how to adapt your existing code.
+
+<Callout type="warning">
+  v3 redesigns the AST and changes the type annotation syntax. Migration requires changes to code that uses templates.
+</Callout>
+
+## Main change: `.type` instead of `=type`
+
+The biggest breaking change in v3 is migrating type annotations from the `=` operator to the `.` operator:
+
+```diff
+- const template = new Analyze('/users/:id=number')
++ const template = new Analyze('/users/:id.number')
+```
+
+The `=` operator is now used **exclusively** to define default values:
+
+```typescript
+// v3: `.` for type, `=` for default
+const template = new Analyze('/search?page.number=1&limit.number=10')
+```
+
+## New features in v3
+
+### `~` operator (optional)
+
+Parameters can now be marked as optional:
+
+```typescript
+const template = new Analyze('/users/:id/profile/:~tab')
+```
+
+### Enum support
+
+New type to restrict values:
+
+```typescript
+const template = new Analyze('/theme/:mode.enum[dark,light]')
+```
+
+### Generic enums
+
+```typescript
+const template = new Analyze('/status/:state.enum')
+```
+
+## Redesigned AST
+
+v3 completely redesigned the AST structure:
+
+| Aspect | v2 | v3 |
+| :--- | :--- | :--- |
+| Abstraction | Granular (mirrored tokens) | Semantic (grouped by meaning) |
+| Delimiters | `Delimiters`, `EncodingSymbols` | `ParameterDelimiters`, `DynamicVariableDelimiters`, `GeneralDelimiters`, `Operators` |
+| Expressions | `Null`, `Value` | `None`, `Type`, `Default`, new states for dynamic and catch-all |
+
+### Internal expression renames
+
+The `InternalExpression` enum values were renamed:
+
+```diff
+- InternalExpression.Null
++ InternalExpression.None
+
+- InternalExpression.Value
++ InternalExpression.Type
+```
+
+## Build
+
+v3 migrated the build to **esbuild**, with CJS and ESM targets and **ES2024** target.
+
+## Migration checklist
+
+- [ ] Replace `=type` with `.type` in all templates
+- [ ] Use `=` only for default values (optionally with `.type`)
+- [ ] Update type imports if you used internal enums directly
+- [ ] Verify your build target supports ES2024
+
+<Callout type="info">
+  See the [full CHANGELOG](https://github.com/AsterFlow/url-ast/blob/main/CHANGELOG.md) for the complete list of all changes.
+</Callout>

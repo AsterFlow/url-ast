@@ -1,0 +1,84 @@
+import { Callout } from 'nextra/components'
+
+# Initialization and Configuration Options
+
+**url-ast** can be used in different ways, from direct instantiation with `new Analyze(...)` to factory methods and advanced configuration options.
+
+## Ways to create an instance
+
+### Direct constructor
+
+The most common approach: pass the URL as the first argument and, optionally, a template as the second.
+
+```typescript
+import { Analyze } from 'url-ast'
+
+// Without template — generic parse (params are names, search is Map)
+const standalone = new Analyze('/users/:id')
+
+// With template — typed parse (params and search are typed objects)
+const template = new Analyze('/users/:id.number?active.boolean')
+const parsed = new Analyze('/users/42?active=true', template)
+```
+
+### Factory `Analyze.create`
+
+Static method that returns an instance with automatically inferred types:
+
+```typescript
+const a = Analyze.create('/api/posts/:slug.string')
+// Type of `a` is inferred as AnalyzeInstance<'/api/posts/:slug.string', undefined>
+
+const b = Analyze.create('/api/posts/hello-world', a)
+// Type of `b` is inferred based on `a`'s template
+```
+
+### `setParser` — set template later
+
+If you created the instance without a template, you can associate one afterwards with `setParser`:
+
+```typescript
+const url = new Analyze('/users/42?active=true')
+const template = new Analyze('/users/:id.number?active.boolean')
+
+const parsed = url.setParser(template)
+// From here, `parsed.getParams()` returns { id: 42 }
+```
+
+## Constructor options
+
+The second argument to `Analyze` can be a template (another instance) or an options object:
+
+```typescript
+interface AnalyzeNewOptions<T extends string> {
+  parser?: AnalyzeChain  // template/base for type casting
+}
+```
+
+Example with options:
+
+```typescript
+const template = new Analyze('/items/:id.number')
+const parsed = new Analyze('/items/99', { parser: template })
+
+parsed.getParams() // { id: 99 }
+```
+
+## Reusing templates
+
+Templates are immutable and can be reused with multiple URLs:
+
+```typescript
+const template = new Analyze('/api/:version/users/:id.number?page.number')
+
+// Same template for multiple URLs
+const v1 = new Analyze('/api/v1/users/10?page=2', template)
+const v2 = new Analyze('/api/v2/users/20?page=5', template)
+
+v1.getParams() // { version: 'v1', id: 10 }
+v2.getParams() // { version: 'v2', id: 20 }
+```
+
+<Callout type="info">
+  For complete details on each `Analyze` method, see the [API Reference — Analyze](/en/docs/api/analyze).
+</Callout>

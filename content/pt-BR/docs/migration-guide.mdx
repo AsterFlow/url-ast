@@ -1,0 +1,86 @@
+import { Callout } from 'nextra/components'
+
+# Migrando da v2 para a v3
+
+Este guia cobre as **breaking changes** introduzidas no url-ast v3 e como adaptar seu código existente.
+
+<Callout type="warning">
+  A v3 redesenha a AST e altera a sintaxe de anotação de tipos. A migração exige mudanças no código que usa templates.
+</Callout>
+
+## Mudança principal: `.type` em vez de `=type`
+
+A maior breaking change da v3 é a migração da anotação de tipos do operador `=` para o operador `.`:
+
+```diff
+- const template = new Analyze('/users/:id=number')
++ const template = new Analyze('/users/:id.number')
+```
+
+O operador `=` agora é usado **exclusivamente** para definir valores default:
+
+```typescript
+// v3: `.` para tipo, `=` para default
+const template = new Analyze('/search?page.number=1&limit.number=10')
+```
+
+## Novas funcionalidades na v3
+
+### Operador `~` (opcional)
+
+Parâmetros agora podem ser marcados como opcionais:
+
+```typescript
+const template = new Analyze('/users/:id/profile/:~tab')
+```
+
+### Suporte a `enum`
+
+Novo tipo para restringir valores:
+
+```typescript
+const template = new Analyze('/theme/:mode.enum[dark,light]')
+```
+
+### Enums genéricos
+
+```typescript
+const template = new Analyze('/status/:state.enum')
+```
+
+## AST redesenhada
+
+A v3 redesenhou completamente a estrutura da AST:
+
+| Aspecto | v2 | v3 |
+| :--- | :--- | :--- |
+| Abstração | Granular (espelhava tokens) | Semântica (agrupada por significado) |
+| Delimitadores | `Delimiters`, `EncodingSymbols` | `ParameterDelimiters`, `DynamicVariableDelimiters`, `GeneralDelimiters`, `Operators` |
+| Expressões | `Null`, `Value` | `None`, `Type`, `Default`, novos estados para dinâmicos e catch-all |
+
+### Renomeações de expressões internas
+
+Os valores do enum `InternalExpression` foram renomeados:
+
+```diff
+- InternalExpression.Null
++ InternalExpression.None
+
+- InternalExpression.Value
++ InternalExpression.Type
+```
+
+## Build
+
+A v3 migrou o build para **esbuild**, com targets CJS e ESM e target **ES2024**.
+
+## Checklist de migração
+
+- [ ] Substituir `=type` por `.type` em todos os templates
+- [ ] Usar `=` somente para valores default (opcionalmente com `.type`)
+- [ ] Atualizar imports de tipos se usava enums internos diretamente
+- [ ] Verificar se seu target de build suporta ES2024
+
+<Callout type="info">
+  Consulte o [CHANGELOG completo](https://github.com/AsterFlow/url-ast/blob/main/CHANGELOG.md) para a lista detalhada de todas as mudanças.
+</Callout>

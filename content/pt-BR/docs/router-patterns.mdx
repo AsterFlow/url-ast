@@ -1,0 +1,123 @@
+import { Callout } from 'nextra/components'
+
+# Sintaxes de Roteamento Suportadas
+
+O **url-ast** oferece uma sintaxe de roteamento flexível e robusta, inspirada nos frameworks mais modernos do mercado. Você pode utilizar tanto o padrão convencional de dois pontos (`:parametro`) quanto a sintaxe de colchetes (`[parametro]`).
+
+## Padrões suportados
+
+| Padrão | Sintaxe | Exemplo de URL | Descrição |
+| :--- | :--- | :--- | :--- |
+| **Estático** | `/caminho/exato` | `/sobre/contato` | Exige correspondência exata. Não captura variáveis. |
+| **Dinâmico (colon)** | `/:param` | `/users/:id` | Captura um único segmento da URL. |
+| **Dinâmico (bracket)** | `/[param]` | `/posts/[slug]` | Sintaxe de colchetes, estilo Next.js/SvelteKit. |
+| **Dinâmico com tipo** | `/:param.type` ou `/[param.type]` | `/users/:id.number` | Captura e converte o tipo automaticamente. |
+| **Opcional** | `/:~param` ou `/[~param]` | `/posts/:id/comments/:~commentId` | Parâmetro pode ser `undefined`. |
+| **Catch-all** | `/[...slug]` | `/docs/[...path]` | Captura múltiplos segmentos como `string[]`. |
+| **Catch-all opcional** | `/[[...slug]]` | `/blog/[[...slug]]` | Rota base continua válida sem parâmetros. |
+| **Query params** | `?param` | `?sort=desc&limit=10` | Captura argumentos da query string. |
+| **Query com tipo** | `?param.type` | `?page.number&active.boolean` | Query params com type casting. |
+| **Query com default** | `?param.type=valor` | `?page.number=1` | Query com tipo e valor default. |
+| **Fragmento (hash)** | `#secao` | `#introducao` | Captura a âncora no final da URL. |
+
+<Callout type="default">
+  Em ambientes de API tradicional, os fragmentos (`#`) geralmente não são enviados pelo navegador para o servidor.
+</Callout>
+
+## Exemplos práticos
+
+### Rota dinâmica simples
+
+```typescript
+import { Analyze } from 'url-ast'
+
+const template = new Analyze('/users/:id')
+const parsed = new Analyze('/users/123', template)
+
+console.log(parsed.getParams())
+// { id: '123' }
+```
+
+### Dinâmico com type casting
+
+```typescript
+const template = new Analyze('/users/:id.number')
+const parsed = new Analyze('/users/123', template)
+
+console.log(parsed.getParams())
+// { id: 123 }  ← number, não string
+```
+
+### Sintaxe de colchetes
+
+```typescript
+const template = new Analyze('/posts/[slug]')
+const parsed = new Analyze('/posts/hello-world', template)
+
+console.log(parsed.getParams())
+// { slug: 'hello-world' }
+```
+
+### Catch-all
+
+```typescript
+const template = new Analyze('/docs/[...path]')
+const parsed = new Analyze('/docs/api/reference/analyze', template)
+
+console.log(parsed.getParams())
+// { path: ['api', 'reference', 'analyze'] }
+```
+
+### Catch-all opcional
+
+```typescript
+const template = new Analyze('/blog/[[...slug]]')
+
+const withSlug = new Analyze('/blog/2026/03/release', template)
+console.log(withSlug.getParams())
+// { slug: ['2026', '03', 'release'] }
+
+const noSlug = new Analyze('/blog', template)
+console.log(noSlug.getParams())
+// {}  ← rota base válida
+```
+
+### Query params
+
+```typescript
+const template = new Analyze('/api/posts?page.number&tags.array&active.boolean')
+const parsed = new Analyze('/api/posts?page=2&tags=web,api&active=true', template)
+
+console.log(parsed.getSearchParams())
+// { page: 2, tags: ['web', 'api'], active: true }
+```
+
+### Fragmento
+
+```typescript
+const template = new Analyze('/page#section')
+const parsed = new Analyze('/page#introduction', template)
+
+console.log(parsed.getFragment())
+// { section: 'introduction' }
+```
+
+### Rota completa
+
+Combinando origin, path, query e fragmento:
+
+```typescript
+const template = new Analyze('/api/users/:id.number?page.number=1&active.boolean#section')
+const parsed = new Analyze('https://example.com/api/users/42?page=3&active=true#profile', template)
+
+parsed.getProtocol()      // 'https'
+parsed.getHostname()      // 'example.com'
+parsed.getParams()        // { id: 42 }
+parsed.getSearchParams()  // { page: 3, active: true }
+parsed.getFragment()      // { section: 'profile' }
+```
+
+<Callout type="info">
+  Para detalhes sobre os tipos suportados (`.number`, `.boolean`, `.array`, `.enum`), veja [Conversão de Tipos](/pt-BR/docs/type-casting).
+  Para parâmetros opcionais (`~`), veja [Parâmetros Opcionais](/pt-BR/docs/optional-params).
+</Callout>

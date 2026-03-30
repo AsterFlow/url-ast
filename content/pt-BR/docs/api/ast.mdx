@@ -1,0 +1,170 @@
+# Referência: AST
+
+A classe `AST` é o coração do url-ast. Ela realiza o **parse scannerless** (lexing + construção de árvore em uma única passada) e armazena os nós resultantes.
+
+## Construtor
+
+```typescript
+new AST<Path extends string>(input: Path, options?: ASTOptionalOptions)
+```
+
+> Na maioria dos casos, você não cria a AST diretamente — ela é gerada automaticamente pelo construtor de `Analyze`. Use-a diretamente apenas quando quiser trabalhar com a árvore sem a camada de alto nível.
+
+---
+
+## Propriedades
+
+| Propriedade | Tipo | Descrição |
+| :--- | :--- | :--- |
+| `input` | `string` | A URL original |
+| `nodes` | `Node[]` | Nós raiz da árvore |
+| `errors` | `ErrorLog[]` | Erros de parse |
+| `expressions` | `Set<number>` | Tipos de expressão encontrados |
+
+---
+
+## Consulta de nós
+
+### `getNode(idOrName, input?)`
+
+Encontra um nó por índice numérico ou pelo conteúdo textual.
+
+```typescript
+getNode(idOrName: string | number, input?: string): Node | undefined
+```
+
+### `getNodeByType(type, position?)`
+
+Retorna o n-ésimo nó que corresponde a um tipo de expressão.
+
+```typescript
+getNodeByType(type: AllValues, position?: number): Node | undefined
+```
+
+### `getContent(node, input?)`
+
+Retorna a substring bruta entre os offsets de início e fim de um nó.
+
+```typescript
+getContent(node: Node, input?: string): string
+```
+
+### `getValue(idOrName, input?)`
+
+Retorna o valor (substring) após um nó de parâmetro ou variável.
+
+```typescript
+getValue(idOrName: string | number, input?: string): string | undefined
+```
+
+### `getType(idOrName, input?)`
+
+Retorna o tipo declarado do token de valor que segue um nó de parâmetro.
+
+```typescript
+getType(idOrName: string | number, input?: string)
+```
+
+---
+
+## Nós por camada semântica
+
+### `getOriginNodes()`
+
+Retorna os nós da camada de origin (Protocol, Hostname, Port).
+
+```typescript
+getOriginNodes(): { protocol?: Node, hostname?: Node, port?: Node }
+```
+
+### `getPathNodes()`
+
+Retorna os nós da camada de caminho (segmentos estáticos e dinâmicos).
+
+```typescript
+getPathNodes(): Node[]
+```
+
+### `getQueryNode()`
+
+Retorna o nó delimitador de query (`?`), cujo `body` contém os parâmetros de consulta.
+
+```typescript
+getQueryNode(): Node | undefined
+```
+
+### `getFragmentNode()`
+
+Retorna o nó delimitador de fragmento (`#`), cujo `body` contém o payload do hash.
+
+```typescript
+getFragmentNode(): Node | undefined
+```
+
+---
+
+## Visualização
+
+### `display(nodes?, input?)`
+
+Retorna uma tabela formatada (com cores ANSI) representando a estrutura da AST.
+
+```typescript
+display(nodes?: Node[], input?: string): string
+```
+
+```typescript
+const ast = new AST('/users/:id.number?page.number')
+console.log(ast.display())
+```
+
+---
+
+## Serialização
+
+### `toJSON(humanReadable?)`
+
+Converte a AST para um objeto JSON hierárquico, agrupado por camadas semânticas da URL.
+
+```typescript
+toJSON(humanReadable?: boolean): ASTJSON
+```
+
+| Parâmetro | Padrão | Descrição |
+| :--- | :--- | :--- |
+| `humanReadable` | `false` | `true` usa nomes legíveis (`"Path"`, `"Number"`) em vez de códigos numéricos |
+
+```typescript
+const ast = new AST('/users/:id.number')
+
+ast.toJSON()       // kind: 251, type: 249
+ast.toJSON(true)   // kind: "Path", type: "Number"
+```
+
+### `getBuffer()`
+
+Serializa a AST em um buffer binário.
+
+```typescript
+getBuffer(): Buffer
+```
+
+**Layout do buffer:**
+1. Contagem de nós raiz (2 bytes, LE)
+2. Tamanho da URL em bytes (4 bytes, LE)
+3. Dados dos nós (variável, recursivo)
+4. String da URL original (UTF-8)
+
+### `AST.fromBuffer(buffer)`
+
+Reconstrói uma instância da AST a partir de um buffer serializado.
+
+```typescript
+static fromBuffer(buffer: Buffer): AST<string>
+```
+
+```typescript
+const ast = new AST('/path/:x')
+const buf = ast.getBuffer()
+const restored = AST.fromBuffer(buf)
+```

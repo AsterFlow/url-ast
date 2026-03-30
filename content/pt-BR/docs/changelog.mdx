@@ -1,0 +1,31 @@
+# Histórico de Alterações
+
+Histórico completo de alterações do url-ast.
+
+---
+
+## [3.0.0] - 2026-03-25
+
+### Adicionado
+
+- Sintaxe de anotação de tipos usando o operador `.` em segmentos de rota e query params (ex: `/users/:id.number` e `?page.number`).
+- Operador `=` como inicializador de valor default para variáveis e query params (em conjunto com `.type`, quando aplicável).
+- Operador `~` para marcar parâmetros ou segmentos como opcionais (possivelmente `undefined`), ex: `/posts/[~slug]`.
+- Suporte a tipos enumerados na inferência (`enum[...]` / `enum`).
+- Módulo `src/types/ast.ts` com tipos da AST e formatos JSON (`NodeJSON`, `ASTJSON`, etc.) alinhados com convenções AST mais padronizadas.
+- Build migrado para **esbuild** (CJS/ESM), com target **ES2024**, incluindo bundle auxiliar para `decodeURL`.
+
+### Alterado
+
+- A AST foi **redesenhada**: a árvore agora usa abstrações mais fortes (tipos de nó e expressões internas), em vez de espelhar cada operador/token de forma excessivamente granular.
+- Delimitadores e símbolos da gramática reorganizados: `Delimiters` e `EncodingSymbols` foram substituídos por `ParameterDelimiters`, `DynamicVariableDelimiters`, `GeneralDelimiters`, `Operators` e `CatchAllExpression`.
+- Expressões internas renomeadas/reestruturadas (ex: `Null` → `None`, `Value` → `Type`, novos estados para segmentos dinâmicos e *catch-all*); `ContentTypes.Array` ajustado numericamente.
+- Inferência TypeScript para `ParseParams` / `ParseSearch` / `TypeMap` atualizada para suportar a nova sintaxe (`.type`, `=default`, `~` e `enum`).
+
+### Removido
+
+- A sintaxe antiga que **apenas** usava `=` para anotações de tipo em parâmetros de rota (ex: `:id=number`); o papel de tipagem migrou para `.`.
+
+### Documentação
+
+- **README.md** reescrito para v3: `.type` / `=` / `~`, rotas com `:` e `[]`, catch-all `[...]`, comportamento de query e fragment com/sem base, `Analyze.create` / `fromBuffer` / `getBuffer`, AST `display` / `toJSON`, tabela de exports públicos, requisitos Node 20 + TypeScript ^5.

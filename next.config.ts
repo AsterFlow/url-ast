@@ -1,10 +1,57 @@
-import type { NextConfig } from "next"
+import bundleAnalyzer from '@next/bundle-analyzer'
 import nextra from 'nextra'
- 
-const withNextra = nextra({ search: false })
 
-const nextConfig: NextConfig = {
-  output: 'export'
-}
- 
-export default withNextra(nextConfig)
+const withNextra = nextra({
+  defaultShowCopyCode: true,
+  unstable_shouldAddLocaleToLinks: true,
+  latex: true,
+  contentDirBasePath: '/'
+})
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true'
+})
+
+const nextConfig = withBundleAnalyzer(
+  withNextra({
+    reactStrictMode: true,
+    // output: 'export',
+    i18n: {
+      locales: ['en', 'pt-BR'],
+      defaultLocale: 'en'
+    },
+    webpack(config) {
+      // rule.exclude doesn't work starting from Next.js 15
+      const { test: _test, ...imageLoaderOptions } = config.module.rules.find(
+        // @ts-expect-error -- fixme
+        rule => rule.test?.test?.('.svg')
+      )
+      config.module.rules.push({
+        test: /\.svg$/,
+        oneOf: [
+          {
+            resourceQuery: /svgr/,
+            use: ['@svgr/webpack']
+          },
+          imageLoaderOptions
+        ]
+      })
+      return config
+    },
+    turbopack: {
+      rules: {
+        './app/_icons/*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js'
+        }
+      }
+    },
+    experimental: {
+      optimizePackageImports: [
+        // '@app/_icons'
+      ]
+    }
+  })
+)
+
+export default nextConfig

@@ -1,0 +1,208 @@
+# Referência: Analyze
+
+A classe `Analyze` é a **API de alto nível** do url-ast. Ela recebe uma URL (ou template), constrói a AST internamente, e expõe métodos para extrair parâmetros, query, fragmento, origin e metadados da rota.
+
+## Construtor
+
+```typescript
+new Analyze(input: string)
+new Analyze(input: string, base: AnalyzeChain)
+new Analyze(input: string, options: AnalyzeNewOptions)
+```
+
+| Parâmetro | Tipo | Descrição |
+| :--- | :--- | :--- |
+| `input` | `string` | A URL ou template a ser parseado |
+| `base` | `AnalyzeChain` | Template para type casting e matching |
+| `options` | `AnalyzeNewOptions` | Objeto com `{ parser?: AnalyzeChain }` |
+
+---
+
+## Propriedades
+
+| Propriedade | Tipo | Descrição |
+| :--- | :--- | :--- |
+| `ast` | `AST<string>` | A árvore sintática gerada pelo parser |
+| `errors` | `ErrorLog[]` | Erros de parse encontrados |
+
+---
+
+## Métodos de extração de dados
+
+### `getParams()`
+
+Extrai os parâmetros de rota (path params).
+
+```typescript
+getParams(): AnalyzeParamsResult
+```
+
+- **Sem template:** retorna `string[]` com os nomes dos parâmetros declarados.
+- **Com template:** retorna um objeto tipado com os valores convertidos.
+
+```typescript
+const template = new Analyze('/users/:id.number/:name')
+const parsed = new Analyze('/users/42/john', template)
+
+parsed.getParams() // { id: 42, name: 'john' }
+```
+
+### `getSearchParams()`
+
+Extrai os parâmetros de consulta (query params).
+
+```typescript
+getSearchParams(): AnalyzeSearchParamsResult
+```
+
+- **Sem template:** retorna `Map<string, string | string[]>`.
+- **Com template:** retorna um objeto tipado.
+
+```typescript
+const template = new Analyze('/search?q&page.number&tags.array')
+const parsed = new Analyze('/search?q=ts&page=2&tags=web,api', template)
+
+parsed.getSearchParams()
+// { q: 'ts', page: 2, tags: ['web', 'api'] }
+```
+
+### `getFragment()`
+
+Extrai o fragmento (hash) da URL.
+
+```typescript
+getFragment(): AnalyzeFragmentResult
+```
+
+```typescript
+const template = new Analyze('/page#section')
+const parsed = new Analyze('/page#intro', template)
+
+parsed.getFragment() // { section: 'intro' }
+```
+
+### `getStaticProps()`
+
+Retorna propriedades de segmentos estáticos de rotas com colchetes e catch-all.
+
+```typescript
+getStaticProps(): Record<string, string | string[]>
+```
+
+```typescript
+const template = new Analyze('/docs/[...path]')
+const parsed = new Analyze('/docs/api/reference/analyze', template)
+
+parsed.getStaticProps() // { path: ['api', 'reference', 'analyze'] }
+```
+
+---
+
+## Métodos de origin
+
+### `getPathname()`
+
+Retorna o caminho da URL, sem origin, query ou fragmento.
+
+```typescript
+getPathname(): string
+```
+
+### `getProtocol()`
+
+```typescript
+getProtocol(): string | undefined
+```
+
+### `getHostname()`
+
+```typescript
+getHostname(): string | undefined
+```
+
+### `getPort()`
+
+```typescript
+getPort(): string | undefined
+```
+
+```typescript
+const p = new Analyze('https://api.example.com:8080/v1/users')
+p.getProtocol() // 'https'
+p.getHostname() // 'api.example.com'
+p.getPort()     // '8080'
+p.getPathname() // '/v1/users'
+```
+
+---
+
+## Template e parse
+
+### `setParser(base)`
+
+Associa um template a uma instância existente. Retorna uma nova instância tipada.
+
+```typescript
+setParser<S extends AnalyzeChain>(base: S): AnalyzeInstance<string, S>
+```
+
+```typescript
+const url = new Analyze('/users/42')
+const template = new Analyze('/users/:id.number')
+const parsed = url.setParser(template)
+
+parsed.getParams() // { id: 42 }
+```
+
+---
+
+## Erros
+
+### `hasErrors()`
+
+```typescript
+hasErrors(errors?: ErrorLog[]): boolean
+```
+
+### `displayErrors()`
+
+Retorna uma string formatada com os erros encontrados.
+
+```typescript
+displayErrors(errors?: ErrorLog[]): string
+```
+
+---
+
+## Serialização
+
+### `getBuffer()`
+
+Serializa a instância para um `Buffer` binário.
+
+```typescript
+getBuffer(): Buffer
+```
+
+### `Analyze.fromBuffer(buffer)`
+
+Restaura uma instância a partir de um buffer serializado.
+
+```typescript
+static fromBuffer(buffer: Buffer): AnalyzeChain
+```
+
+### `Analyze.create(input, base?)`
+
+Factory estática com inferência de tipos completa.
+
+```typescript
+static create<P extends string>(input: P): AnalyzeInstance<P, undefined>
+static create<P extends string, B extends AnalyzeChain>(input: P, base: B): AnalyzeInstance<P, B>
+```
+
+```typescript
+const a = Analyze.create('/path/:x.string')
+const buf = a.getBuffer()
+const restored = Analyze.fromBuffer(buf)
+```

@@ -1,0 +1,104 @@
+import { Callout, Steps } from 'nextra/components'
+import { TerminalCommandSelector } from '@/components/ui/codeblock'
+
+# Instalação e Primeiro Parse
+
+Bem-vindo ao **url-ast**! Este guia mostrará como instalar a biblioteca e extrair seus primeiros parâmetros tipados de uma URL em poucos minutos.
+
+## Requisitos
+
+- **Node.js** ≥ 20
+- **TypeScript** ^5 (peer dependency) para inferência de tipos
+
+## Instalação
+
+Adicione o **url-ast** utilizando o seu gerenciador de pacotes favorito:
+
+<TerminalCommandSelector commandOptions={[
+  { tabName: 'npm', commandString: 'npm add url-ast' }, 
+  { tabName: 'pnpm', commandString: 'pnpm add url-ast' }, 
+  { tabName: 'yarn', commandString: 'yarn add url-ast' }, 
+  { tabName: 'bun', commandString: 'bun add url-ast' }
+]} />
+
+## Primeiro parse
+
+<Steps>
+
+### Defina um modelo de rota (template)
+
+O template atua como um contrato: descreve os segmentos dinâmicos da URL (`:nome` ou `[nome]`), seus tipos (`.number`, `.boolean`, etc.) e os parâmetros de consulta esperados.
+
+```typescript
+import { Analyze } from 'url-ast'
+
+const template = new Analyze('/users/:id.number')
+```
+
+### Analise a URL real
+
+Passe a URL concreta junto com o template. O url-ast fará o *match* e a conversão automática dos tipos.
+
+```typescript
+const parsed = new Analyze('/users/123', template)
+```
+
+### Acesse os dados estruturados
+
+Os parâmetros já chegam tipados e prontos para uso:
+
+```typescript
+console.log(parsed.getParams())
+// { id: 123 }  ← number, não string!
+```
+
+### Combine path + query params
+
+Adicione parâmetros de consulta ao template para tipar tudo de uma vez:
+
+```typescript
+const template = new Analyze('/users/:id.number?active.boolean&role.enum[admin,user]')
+const parsed = new Analyze('/users/42?active=true&role=admin', template)
+
+console.log(parsed.getParams())        // { id: 42 }
+console.log(parsed.getSearchParams())  // { active: true, role: 'admin' }
+```
+
+### Opcional: inspecione a AST
+
+Precisa debugar ou entender como o parser interpretou a rota? Visualize a Árvore Sintática Abstrata:
+
+```typescript
+console.log(parsed.ast.display())
+```
+
+</Steps>
+
+## Alternativas de uso
+
+### Factory `Analyze.create`
+
+Para inferência automática de tipos no TypeScript:
+
+```typescript
+const template = Analyze.create('/posts/:slug.string?page.number')
+const parsed = Analyze.create('/posts/hello-world?page=3', template)
+```
+
+### `setParser` — definir template depois
+
+```typescript
+const url = new Analyze('/users/42')
+const template = new Analyze('/users/:id.number')
+const parsed = url.setParser(template)
+
+parsed.getParams() // { id: 42 }
+```
+
+## Próximos passos
+
+<Callout type="info">
+  Explore as seções de [Padrões de Rota](/pt-BR/docs/router-patterns) para todas as sintaxes suportadas,
+  [Conversão de Tipos](/pt-BR/docs/type-casting) para detalhes sobre cada tipo,
+  e [Parâmetros Opcionais](/pt-BR/docs/optional-params) para o operador `~`.
+</Callout>

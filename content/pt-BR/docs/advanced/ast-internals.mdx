@@ -1,0 +1,125 @@
+# Arquitetura Interna do Parser e da AST
+
+Esta página explica a arquitetura interna do parser e a estrutura da árvore sintática abstrata (AST) gerada pelo url-ast.
+
+## Parser scannerless
+
+O url-ast utiliza um parser **scannerless**: não existe um lexer separado. A tokenização e a construção da árvore acontecem em uma **única passada** sobre a string de entrada.
+
+```
+Input: "/users/:id.number?page.number"
+         ↓
+   ┌─────────────────┐
+   │  AST.parser()   │  ← Leitura char a char
+   │  (scannerless)  │     Identificação de estados
+   │                 │     Construção de nós
+   └────────┬────────┘
+            ↓
+   Árvore de Node[]
+```
+
+O parser identifica caracteres especiais (delimitadores, operadores) pelo seu **charCode** e transiciona entre estados internos (`InternalExpression`).
+
+## Estrutura dos nós
+
+Cada nó (`Node`) na árvore contém:
+
+| Campo | Tipo | Descrição |
+| :--- | :--- | :--- |
+| `state` | `AllValues` | Tipo/estado do nó (enum numérico) |
+| `start` | `number` | Offset de início na string original |
+| `end` | `number` | Offset de fim na string original |
+| `body` | `Node[]` | Nós filhos (sub-árvore) |
+
+## Camadas semânticas
+
+A AST organiza os nós em camadas semânticas que refletem a estrutura de uma URL:
+
+```
+URL: "https://api.example.com:8080/users/:id.number?page=2#section"
+
+┌─────────────────────────────────────────────────────┐
+│ Origin                                              │
+│  ├─ Protocol  → "https"                             │
+│  ├─ Hostname  → "api.example.com"                   │
+│  └─ Port      → "8080"                              │
+├─────────────────────────────────────────────────────┤
+│ Path                                                 │
+│  ├─ PathSegment "users"          (estático)          │
+│  └─ DynamicSegment ":id"                             │
+│      ├─ VariableDeclaration "id"                     │
+│      └─ TypeAnnotation "number"                      │
+├─────────────────────────────────────────────────────┤
+│ Query                                                │
+│  └─ ParameterDeclaration "page"                      │
+├─────────────────────────────────────────────────────┤
+│ Fragment                                             │
+│  └─ FragmentIdentifier "section"                     │
+└─────────────────────────────────────────────────────┘
+```
+
+Você pode acessar cada camada diretamente:
+
+```typescript
+const ast = parsed.ast
+
+ast.getOriginNodes()   // { protocol?, hostname?, port? }
+ast.getPathNodes()     // Node[] dos segmentos de rota
+ast.getQueryNode()     // Node do delimitador ?
+ast.getFragmentNode()  // Node do delimitador #
+```
+
+## Estados internos
+
+O parser usa enums numéricos para identificar cada tipo de nó:
+
+### `InternalExpression`
+
+| Nome | Valor | Significado |
+| :--- | :--- | :--- |
+| `None` | 0 | Nó sem tipo (conteúdo literal) |
+| `Dynamic` | 200 | Segmento dinâmico (`/:param` ou `[param]`) |
+| `DynamicCatchAll` | 201 | Catch-all (`[...slug]`) |
+| `DynamicOptionalCatchAll` | 202 | Catch-all opcional (`[[...slug]]`) |
+| `Default` | 203 | Valor default |
+| `Wildcard` | 250 | Expressão wildcard (`*`) |
+| `Path` | 251 | Segmento de caminho |
+| `Variable` | 252 | Declaração de variável |
+| `Fragment` | 253 | Identificador de fragmento |
+| `Parameter` | 254 | Declaração de parâmetro |
+| `Type` | 255 | Anotação de tipo |
+
+### `ContentTypes`
+
+| Nome | Valor | Tipo JavaScript |
+| :--- | :--- | :--- |
+| `Array` | 239 | `string[]` |
+| `Enum` | 240 | Union de strings |
+| `Boolean` | 247 | `boolean` |
+| `String` | 248 | `string` |
+| `Number` | 249 | `number` |
+
+## Tokens semânticos
+
+O mapa `SemanticTokens` traduz códigos numéricos para nomes legíveis:
+
+```typescript
+import { SemanticTokens } from 'url-ast'
+
+SemanticTokens[251] // 'PathSegment'
+SemanticTokens[249] // 'NumberType'
+SemanticTokens[200] // 'DynamicSegment'
+```
+
+Isso é usado pelo método `ast.toJSON(true)` para produzir uma versão human-readable.
+
+## Visualizando a AST
+
+O método `display()` gera uma tabela formatada:
+
+```typescript
+const ast = new AST('/users/:id.number?page.number#section')
+console.log(ast.display())
+```
+
+O output inclui cores ANSI para diferenciar segmentos estáticos, dinâmicos, tipos e delimitadores.

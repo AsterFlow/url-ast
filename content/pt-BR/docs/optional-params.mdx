@@ -1,0 +1,60 @@
+import { Callout } from 'nextra/components'
+
+# Marcando Parâmetros como Opcionais
+
+O operador `~` marca um parâmetro ou segmento como **opcional**, permitindo que seu valor seja `undefined` sem invalidar a rota.
+
+## Sintaxe
+
+Adicione `~` antes do nome do parâmetro:
+
+| Padrão | Sintaxe | Descrição |
+| :--- | :--- | :--- |
+| Colon param opcional | `/:~name` | Parâmetro com `:` que pode ser omitido |
+| Bracket param opcional | `/[~name]` | Parâmetro com colchetes que pode ser omitido |
+| Com tipo | `/:~name.number` | Opcional + type casting combinados |
+
+## Exemplo: parâmetro de rota opcional
+
+```typescript
+import { Analyze } from 'url-ast'
+
+const template = new Analyze('/posts/:id/comments/:~commentId.number')
+
+// Com o parâmetro opcional fornecido
+const withComment = new Analyze('/posts/abc/comments/42', template)
+console.log(withComment.getParams())
+// { id: 'abc', commentId: 42 }
+
+// Sem o parâmetro opcional
+const withoutComment = new Analyze('/posts/abc/comments/', template)
+console.log(withoutComment.getParams())
+// { id: 'abc', commentId: undefined }
+```
+
+## Exemplo: query param opcional
+
+O operador `~` também funciona em parâmetros de consulta:
+
+```typescript
+const template = new Analyze('/search?q&~page.number&~limit.number')
+
+const search = new Analyze('/search?q=typescript', template)
+console.log(search.getSearchParams())
+// { q: 'typescript', page: undefined, limit: undefined }
+```
+
+## Inferência TypeScript
+
+Na inferência de tipos, parâmetros marcados com `~` incluem `| undefined` automaticamente:
+
+```typescript
+import type { ParsePath } from 'url-ast'
+
+type Route = ParsePath<'/users/:id/profile/:~tab'>
+// Route.params → { id: string; tab: string | undefined }
+```
+
+<Callout type="info">
+  O operador `~` pode ser combinado com qualquer [tipo suportado](/pt-BR/docs/type-casting) (`.number`, `.boolean`, `.array`, `.enum`).
+</Callout>

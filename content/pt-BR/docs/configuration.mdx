@@ -1,0 +1,84 @@
+import { Callout } from 'nextra/components'
+
+# Opções de Inicialização e Configuração
+
+O **url-ast** pode ser usado de diferentes formas, desde a instanciação direta com `new Analyze(...)` até métodos de fábrica e opções de configuração avançada.
+
+## Formas de criar uma instância
+
+### Construtor direto
+
+A forma mais comum: passe a URL como primeiro argumento e, opcionalmente, um template como segundo.
+
+```typescript
+import { Analyze } from 'url-ast'
+
+// Sem template — parse genérico (params são nomes, search é Map)
+const standalone = new Analyze('/users/:id')
+
+// Com template — parse tipado (params e search são objetos tipados)
+const template = new Analyze('/users/:id.number?active.boolean')
+const parsed = new Analyze('/users/42?active=true', template)
+```
+
+### Factory `Analyze.create`
+
+Método estático que retorna uma instância com tipagem inferida automaticamente:
+
+```typescript
+const a = Analyze.create('/api/posts/:slug.string')
+// Tipo de `a` é inferido como AnalyzeInstance<'/api/posts/:slug.string', undefined>
+
+const b = Analyze.create('/api/posts/hello-world', a)
+// Tipo de `b` é inferido com base no template de `a`
+```
+
+### `setParser` — definir template depois
+
+Se você criou a instância sem template, pode associá-lo depois com `setParser`:
+
+```typescript
+const url = new Analyze('/users/42?active=true')
+const template = new Analyze('/users/:id.number?active.boolean')
+
+const parsed = url.setParser(template)
+// A partir daqui, `parsed.getParams()` retorna { id: 42 }
+```
+
+## Opções do construtor
+
+O segundo argumento do `Analyze` pode ser um template (outra instância) ou um objeto de opções:
+
+```typescript
+interface AnalyzeNewOptions<T extends string> {
+  parser?: AnalyzeChain  // template/base para type casting
+}
+```
+
+Exemplo com opções:
+
+```typescript
+const template = new Analyze('/items/:id.number')
+const parsed = new Analyze('/items/99', { parser: template })
+
+parsed.getParams() // { id: 99 }
+```
+
+## Reutilizando templates
+
+Templates são imutáveis e podem ser reutilizados com múltiplas URLs:
+
+```typescript
+const template = new Analyze('/api/:version/users/:id.number?page.number')
+
+// O mesmo template para várias URLs
+const v1 = new Analyze('/api/v1/users/10?page=2', template)
+const v2 = new Analyze('/api/v2/users/20?page=5', template)
+
+v1.getParams() // { version: 'v1', id: 10 }
+v2.getParams() // { version: 'v2', id: 20 }
+```
+
+<Callout type="info">
+  Para detalhes completos sobre cada método da classe `Analyze`, consulte a [Referência da API — Analyze](/pt-BR/docs/api/analyze).
+</Callout>

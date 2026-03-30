@@ -1,0 +1,104 @@
+import { Callout } from 'nextra/components'
+
+# Automatic Type Casting and Conversion
+
+The biggest advantage of **url-ast** is its ability to not only capture but also **type and cast** parameters directly within the route declaration. This eliminates verbose validations in your code and delivers ready-to-use data.
+
+To apply a cast, append the `.type` suffix right after your variable name.
+
+## Supported types
+
+| Type | Syntax | Description | Input → Output Example |
+| :--- | :--- | :--- | :--- |
+| **String** | `.string` (or omitted) | Default behavior. Preserves the text. | `user_123` → `'user_123'` |
+| **Number** | `.number` | Converts the string to a numeric value. | `-42` → `-42` |
+| **Boolean** | `.boolean` | Infers intent and converts to boolean. | `true` or `1` → `true` |
+| **Array** | `.array` | Splits comma-separated values into a list. | `a,b,c` → `['a', 'b', 'c']` |
+| **Enum** | `.enum[op1,op2]` | Restricts values to an allowed list. | `admin` → `'admin'` |
+| **Generic enum** | `.enum` | Enum without variant restrictions. | `anything` → `'anything'` |
+
+---
+
+## Usage examples
+
+### Primitive types
+
+```typescript
+import { Analyze } from 'url-ast'
+
+const template = new Analyze('/users/:id.number/status/:active.boolean')
+const parsed = new Analyze('/users/42/status/true', template)
+
+console.log(parsed.getParams())
+// { id: 42, active: true }
+```
+
+### Array and Enum
+
+For scenarios where you need to receive data lists or restrict values to a specific set:
+
+```typescript
+const template = new Analyze('/theme/:color.enum[dark,light]/tags/:list.array')
+const parsed = new Analyze('/theme/dark/tags/web,api,design', template)
+
+console.log(parsed.getParams())
+// { color: 'dark', list: ['web', 'api', 'design'] }
+```
+
+### Typed query params
+
+The same typing logic applies to query parameters, ideal for pagination and filters:
+
+```typescript
+const template = new Analyze('/api/posts?page.number&popular.boolean&tags.array')
+const parsed = new Analyze('/api/posts?page=2&popular=true&tags=ts,js', template)
+
+console.log(parsed.getSearchParams())
+// { page: 2, popular: true, tags: ['ts', 'js'] }
+```
+
+### Combining type with default
+
+Use `.type=value` to define type and default value at the same time:
+
+```typescript
+const template = new Analyze('/search?q&page.number=1&limit.number=20')
+const parsed = new Analyze('/search?q=typescript', template)
+
+console.log(parsed.getSearchParams())
+// { q: 'typescript', page: 1, limit: 20 }
+```
+
+### Optional parameter with type
+
+Combine the `~` operator with `.type` for parameters that can be `undefined`:
+
+```typescript
+const template = new Analyze('/posts/:id/comments/:~commentId.number')
+const parsed = new Analyze('/posts/abc/comments/', template)
+
+console.log(parsed.getParams())
+// { id: 'abc', commentId: undefined }
+```
+
+---
+
+## TypeScript inference
+
+TypeScript infers types automatically from the template string:
+
+```typescript
+import type { ParsePath } from 'url-ast'
+
+type Route = ParsePath<'/users/:id.number?active.boolean&tags.array'>
+// {
+//   params: { id: number }
+//   searchParams: { active: boolean, tags: string[] }
+//   fragment: {}
+// }
+```
+
+<Callout type="info">
+  For more details on compile-time type inference, see [TypeScript Inference](/en/docs/advanced/typescript-inference).
+  For default values, see [Default Params](/en/docs/default-params).
+</Callout>

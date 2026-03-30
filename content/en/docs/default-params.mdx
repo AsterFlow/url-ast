@@ -1,0 +1,75 @@
+import { Callout } from 'nextra/components'
+
+# Setting Default Values for Parameters
+
+The `=` operator lets you define **default values** for query parameters and route variables. When the value is not provided in the concrete URL, the default is used automatically.
+
+## Syntax
+
+The `=` operator can be combined with the `.type` operator to define type and default value simultaneously:
+
+| Syntax | Description |
+| :--- | :--- |
+| `?param=value` | Query param with default (type `string`) |
+| `?param.number=10` | Query param with type and default |
+| `?param.boolean=true` | Boolean with default |
+
+## Basic example
+
+```typescript
+import { Analyze } from 'url-ast'
+
+const template = new Analyze('/users?page.number=1')
+const parsed = new Analyze('/users', template)
+
+console.log(parsed.getSearchParams())
+// { page: 1 }
+```
+
+When the parameter **is provided**, the URL value takes precedence:
+
+```typescript
+const parsed = new Analyze('/users?page=5', template)
+
+console.log(parsed.getSearchParams())
+// { page: 5 }
+```
+
+## Multiple defaults
+
+Combine several parameters with defaults in a single route:
+
+```typescript
+const template = new Analyze('/api/products?page.number=1&limit.number=20&sort=name')
+const parsed = new Analyze('/api/products?sort=price', template)
+
+console.log(parsed.getSearchParams())
+// { page: 1, limit: 20, sort: 'price' }
+```
+
+## Combining with types
+
+The `=` operator works together with the `.type` operator. The syntax is `param.type=value`:
+
+```typescript
+const template = new Analyze('/search?q&page.number=1&descending.boolean=false')
+const parsed = new Analyze('/search?q=typescript', template)
+
+console.log(parsed.getSearchParams())
+// { q: 'typescript', page: 1, descending: false }
+```
+
+## TypeScript inference
+
+The inferred type reflects the type declared with `.type`, regardless of the default value:
+
+```typescript
+import type { ParsePath } from 'url-ast'
+
+type Route = ParsePath<'/search?q&page.number=1&limit.number=10'>
+// Route.searchParams → { q: string, page: number, limit: number }
+```
+
+<Callout type="info">
+  The `=` operator in v3 is used **exclusively** for default values. Type annotations use the `.` operator (e.g., `.number`, `.boolean`). See the [Migration Guide](/en/docs/migration-guide) for details.
+</Callout>

@@ -1,0 +1,93 @@
+# Tratamento de Erros
+
+O url-ast reporta erros de parse de forma estruturada, sem lançar exceções. Isso permite que você inspecione problemas e decida como lidar com eles.
+
+## `ErrorLog`
+
+Cada erro de parse é representado por uma instância de `ErrorLog`:
+
+```typescript
+import { ErrorLog } from 'url-ast'
+```
+
+A classe `ErrorLog` armazena informações sobre o erro encontrado durante o parse, incluindo posição e contexto.
+
+---
+
+## Verificando erros
+
+### `hasErrors()`
+
+Verifica se existem erros na instância:
+
+```typescript
+const parsed = new Analyze('/users/[unclosed')
+
+if (parsed.hasErrors()) {
+  console.log('Encontrados erros de parse!')
+}
+```
+
+### `displayErrors()`
+
+Retorna uma string formatada e legível com os detalhes de todos os erros:
+
+```typescript
+const parsed = new Analyze('/users/[unclosed')
+
+if (parsed.hasErrors()) {
+  console.log(parsed.displayErrors())
+  // Exibe uma mensagem detalhada sobre o colchete não fechado
+}
+```
+
+---
+
+## Acessando erros diretamente
+
+Os erros estão disponíveis na propriedade `errors` tanto da instância `Analyze` quanto da `AST`:
+
+```typescript
+const parsed = new Analyze('/invalid/[route')
+
+// Via Analyze
+console.log(parsed.errors)
+
+// Via AST
+console.log(parsed.ast.errors)
+```
+
+---
+
+## Cenários comuns de erro
+
+| Cenário | Exemplo | Descrição |
+| :--- | :--- | :--- |
+| Colchete não fechado | `/users/[id` | Falta `]` no segmento dinâmico |
+| Catch-all malformado | `/docs/[..slug]` | Faltam os três pontos (`...`) |
+| Tipo inválido | `/:id.invalid` | Tipo não reconhecido na anotação |
+
+---
+
+## Tratamento de erros em produção
+
+O url-ast não lança exceções — ele **acumula** erros e continua o parse o máximo possível. Isso permite que você:
+
+1. Sempre obtenha um resultado parcial, mesmo com URLs malformadas
+2. Inspecione os erros e decida como tratá-los
+3. Exiba mensagens de erro amigáveis para o usuário
+
+```typescript
+import { Analyze } from 'url-ast'
+
+function parseRoute(url: string, template: Analyze) {
+  const result = new Analyze(url, template)
+
+  if (result.hasErrors()) {
+    console.warn('URL com problemas:', result.displayErrors())
+    // Decide: retornar parcial, fallback, ou rejeitar
+  }
+
+  return result.getParams()
+}
+```

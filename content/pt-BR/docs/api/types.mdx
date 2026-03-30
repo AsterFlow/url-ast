@@ -1,0 +1,182 @@
+# Referência: Tipos e Interfaces
+
+O url-ast exporta um conjunto robusto de **tipos TypeScript** que permitem inferência completa a partir de template literals e acesso às estruturas internas da AST.
+
+## Tipos de inferência
+
+Estes tipos transformam uma string de template em tipos TypeScript concretos em tempo de compilação.
+
+### `ParsePath<S>`
+
+O tipo principal. Dado um template literal, infere `params`, `searchParams` e `fragment`:
+
+```typescript
+import type { ParsePath } from 'url-ast'
+
+type Route = ParsePath<'/users/:id.number?page.number&active.boolean#section'>
+// {
+//   params: { id: number }
+//   searchParams: { page: number, active: boolean }
+//   fragment: { section: string }
+// }
+```
+
+### `ParseParams<S>`
+
+Infere apenas os parâmetros de rota:
+
+```typescript
+import type { ParseParams } from 'url-ast'
+
+type Params = ParseParams<'id.number/posts/[slug]/tags/[...items]'>
+// { id: number, slug: string, items: string[] }
+```
+
+Suporta todas as sintaxes: `:param`, `[param]`, `[~param]`, `[...slug]`, e `.type`.
+
+### `ParseSearch<S>`
+
+Infere os parâmetros de consulta:
+
+```typescript
+import type { ParseSearch } from 'url-ast'
+
+type Search = ParseSearch<'q&page.number&tags.array'>
+// { q: string, page: number, tags: string[] }
+```
+
+### `ParseFragment<S>`
+
+Infere o fragmento:
+
+```typescript
+import type { ParseFragment } from 'url-ast'
+
+type Frag = ParseFragment<'section'>
+// { section: string }
+```
+
+### `TypeMap`
+
+Mapeia as strings de tipo (`'number'`, `'boolean'`, `'string'`, listas com vírgula) para os tipos JavaScript correspondentes:
+
+```typescript
+TypeMap = {
+  number:  number
+  boolean: boolean
+  string:  string
+  // Listas → string[]
+}
+```
+
+---
+
+## Tipos auxiliares
+
+| Tipo | Descrição |
+| :--- | :--- |
+| `Split<S, D>` | Divide a string `S` pelo delimitador `D` em uma tupla |
+| `ExtractPath<S>` | Remove query e fragment, retornando só o path |
+| `ExtractQuery<S>` | Extrai só a parte da query (sem fragment) |
+| `ExtractFrag<S>` | Extrai só a parte do fragmento |
+| `IsOptional<S>` | Verifica se o segmento tem prefixo `~` |
+| `StripOptional<S>` | Remove o prefixo `~` |
+| `StripAnnotations<S>` | Remove `.type` e `=default`, retornando só o nome |
+| `ExtractType<S>` | Extrai a anotação `.type`; fallback para `'string'` |
+| `CatchAllParamName<S>` | Nome do parâmetro dentro de `[...slug]` |
+| `BracketParamKey<S>` | Chave do parâmetro para `[name]`, `[~name]`, `[name.type]` |
+
+---
+
+## Enums
+
+### `ContentTypes`
+
+Tipos de conteúdo reconhecidos pelo parser:
+
+```typescript
+enum ContentTypes {
+  Enum    = 240,
+  Array   = 239,
+  Boolean = 247,
+  String  = 248,
+  Number  = 249
+}
+```
+
+### `InternalExpression`
+
+Estados internos do parser:
+
+```typescript
+enum InternalExpression {
+  None                   = 0,
+  Dynamic                = 200,
+  DynamicCatchAll        = 201,
+  DynamicOptionalCatchAll = 202,
+  Default                = 203,
+  Wildcard               = 250,
+  Path                   = 251,
+  Variable               = 252,
+  Fragment               = 253,
+  Parameter              = 254,
+  Type                   = 255
+}
+```
+
+### `Operators`
+
+Operadores da gramática:
+
+```typescript
+enum Operators {
+  TypeAnnotation = 46,  // .
+  Default        = 61,  // =
+  Not            = 126  // ~
+}
+```
+
+### Delimitadores
+
+```typescript
+enum ParameterDelimiters {
+  Query     = 63,  // ?
+  Ampersand = 38,  // &
+  Semicolon = 59   // ;
+}
+
+enum DynamicVariableDelimiters {
+  Colon        = 58,  // :
+  LeftBracket  = 91,  // [
+  RightBracket = 93   // ]
+}
+
+enum GeneralDelimiters {
+  Slash = 47,  // /
+  Hash  = 35,  // #
+  Comma = 44   // ,
+}
+```
+
+---
+
+## Tipos de instância
+
+| Tipo | Descrição |
+| :--- | :--- |
+| `AnalyzeInstance<P, B>` | Tipo retornado por `Analyze.create()`, parametrizado pelo template e base |
+| `AnalyzeChain` | Tipo interno de uma instância de Analyze usada como template |
+| `AnalyzeParamsResult` | Tipo de retorno de `getParams()` |
+| `AnalyzeSearchParamsResult` | Tipo de retorno de `getSearchParams()` |
+| `AnalyzeFragmentResult` | Tipo de retorno de `getFragment()` |
+| `PathSegment` | Segmento do caminho com `nodes`, `start`, `end` |
+
+---
+
+## Tipos da AST (JSON)
+
+| Tipo | Descrição |
+| :--- | :--- |
+| `ASTJSON` | Formato JSON completo retornado por `ast.toJSON()` |
+| `NodeJSON` | Representação JSON de um nó individual |
+| `ASTOptionalOptions` | Opções opcionais do construtor da AST |

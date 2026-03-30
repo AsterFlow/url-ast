@@ -1,0 +1,159 @@
+# Reference: Types and Interfaces
+
+url-ast exports a robust set of **TypeScript types** that enable full inference from template literals and access to internal AST structures.
+
+## Inference types
+
+These types transform a template string into concrete TypeScript types at compile time.
+
+### `ParsePath<S>`
+
+The main type. Given a template literal, infers `params`, `searchParams`, and `fragment`:
+
+```typescript
+import type { ParsePath } from 'url-ast'
+
+type Route = ParsePath<'/users/:id.number?page.number&active.boolean#section'>
+// {
+//   params: { id: number }
+//   searchParams: { page: number, active: boolean }
+//   fragment: { section: string }
+// }
+```
+
+### `ParseParams<S>`
+
+Infers only the route parameters:
+
+```typescript
+import type { ParseParams } from 'url-ast'
+
+type Params = ParseParams<'id.number/posts/[slug]/tags/[...items]'>
+// { id: number, slug: string, items: string[] }
+```
+
+### `ParseSearch<S>`
+
+Infers query parameters:
+
+```typescript
+import type { ParseSearch } from 'url-ast'
+
+type Search = ParseSearch<'q&page.number&tags.array'>
+// { q: string, page: number, tags: string[] }
+```
+
+### `ParseFragment<S>`
+
+Infers the fragment:
+
+```typescript
+import type { ParseFragment } from 'url-ast'
+
+type Frag = ParseFragment<'section'>
+// { section: string }
+```
+
+### `TypeMap`
+
+Maps type strings (`'number'`, `'boolean'`, `'string'`, comma lists) to corresponding JavaScript types.
+
+---
+
+## Helper types
+
+| Type | Description |
+| :--- | :--- |
+| `Split<S, D>` | Splits string `S` by delimiter `D` into a tuple |
+| `ExtractPath<S>` | Removes query and fragment, returns only the path |
+| `ExtractQuery<S>` | Extracts only the query part (without fragment) |
+| `ExtractFrag<S>` | Extracts only the fragment part |
+| `IsOptional<S>` | Checks if the segment has a `~` prefix |
+| `StripOptional<S>` | Removes the `~` prefix |
+| `StripAnnotations<S>` | Removes `.type` and `=default`, returns only the name |
+| `ExtractType<S>` | Extracts the `.type` annotation; falls back to `'string'` |
+| `CatchAllParamName<S>` | Parameter name inside `[...slug]` |
+| `BracketParamKey<S>` | Parameter key for `[name]`, `[~name]`, `[name.type]` |
+
+---
+
+## Enums
+
+### `ContentTypes`
+
+```typescript
+enum ContentTypes {
+  Enum    = 240,
+  Array   = 239,
+  Boolean = 247,
+  String  = 248,
+  Number  = 249
+}
+```
+
+### `InternalExpression`
+
+```typescript
+enum InternalExpression {
+  None                   = 0,
+  Dynamic                = 200,
+  DynamicCatchAll        = 201,
+  DynamicOptionalCatchAll = 202,
+  Default                = 203,
+  Wildcard               = 250,
+  Path                   = 251,
+  Variable               = 252,
+  Fragment               = 253,
+  Parameter              = 254,
+  Type                   = 255
+}
+```
+
+### `Operators`
+
+```typescript
+enum Operators {
+  TypeAnnotation = 46,  // .
+  Default        = 61,  // =
+  Not            = 126  // ~
+}
+```
+
+### Delimiters
+
+```typescript
+enum ParameterDelimiters {
+  Query = 63, Ampersand = 38, Semicolon = 59
+}
+
+enum DynamicVariableDelimiters {
+  Colon = 58, LeftBracket = 91, RightBracket = 93
+}
+
+enum GeneralDelimiters {
+  Slash = 47, Hash = 35, Comma = 44
+}
+```
+
+---
+
+## Instance types
+
+| Type | Description |
+| :--- | :--- |
+| `AnalyzeInstance<P, B>` | Type returned by `Analyze.create()`, parameterized by template and base |
+| `AnalyzeChain` | Internal type of an Analyze instance used as template |
+| `AnalyzeParamsResult` | Return type of `getParams()` |
+| `AnalyzeSearchParamsResult` | Return type of `getSearchParams()` |
+| `AnalyzeFragmentResult` | Return type of `getFragment()` |
+| `PathSegment` | Path segment with `nodes`, `start`, `end` |
+
+---
+
+## AST types (JSON)
+
+| Type | Description |
+| :--- | :--- |
+| `ASTJSON` | Full JSON format returned by `ast.toJSON()` |
+| `NodeJSON` | JSON representation of an individual node |
+| `ASTOptionalOptions` | Optional AST constructor options |

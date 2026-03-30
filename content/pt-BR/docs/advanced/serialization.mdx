@@ -1,0 +1,78 @@
+# Serialização e Cache com Buffer Binário
+
+O url-ast oferece serialização binária completa para a AST e para instâncias de `Analyze`, permitindo armazenar, transmitir e restaurar resultados de parse de forma eficiente.
+
+## Por que serializar?
+
+- **Cache:** Armazene ASTs pré-processadas em disco, Redis, ou banco de dados
+- **Transmissão:** Envie árvores entre processos ou serviços via buffer binário
+- **Performance:** Reconstruir de um buffer é mais rápido do que re-parsear a URL
+
+## AST: `getBuffer()` / `fromBuffer()`
+
+### Serializar
+
+```typescript
+import { AST } from 'url-ast'
+
+const ast = new AST('/users/:id.number?page.number')
+const buffer = ast.getBuffer()
+
+// `buffer` é um Buffer do Node.js pronto para salvar ou transmitir
+```
+
+### Restaurar
+
+```typescript
+const restored = AST.fromBuffer(buffer)
+
+console.log(restored.display())
+// Mesma árvore que a original
+```
+
+### Layout do buffer
+
+O layout binário segue esta estrutura:
+
+| Offset | Tamanho | Conteúdo |
+| :--- | :--- | :--- |
+| 0 | 2 bytes (LE) | Contagem de nós raiz |
+| 2 | 4 bytes (LE) | Tamanho da URL em bytes UTF-8 |
+| 6 | variável | Dados dos nós (recursivo) |
+| final | `urlLength` bytes | String da URL original (UTF-8) |
+
+Cada nó é serializado recursivamente: primeiro seus dados (state, offsets, etc.), depois os nós filhos (`body`).
+
+## Analyze: `getBuffer()` / `fromBuffer()`
+
+A classe `Analyze` também suporta serialização, encapsulando a AST e metadados:
+
+```typescript
+import { Analyze } from 'url-ast'
+
+const template = Analyze.create('/api/users/:id.number')
+
+// Serializar
+const buf = template.getBuffer()
+
+// Restaurar
+const restored = Analyze.fromBuffer(buf)
+```
+
+## Exemplo prático: cache de templates
+
+```typescript
+import { Analyze } from 'url-ast'
+import { readFileSync, writeFileSync } from 'fs'
+
+// Primeira execução: criar e salvar
+const template = new Analyze('/api/:version/resources/:id.number?fields.array')
+writeFileSync('template.bin', template.getBuffer())
+
+// Execuções subsequentes: restaurar do cache
+const cached = Analyze.fromBuffer(readFileSync('template.bin'))
+const result = new Analyze('/api/v2/resources/42?fields=name,email', cached)
+
+result.getParams()       // { version: 'v2', id: 42 }
+result.getSearchParams() // { fields: ['name', 'email'] }
+```

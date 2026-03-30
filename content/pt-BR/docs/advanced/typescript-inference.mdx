@@ -1,0 +1,133 @@
+# Inferência de Tipos em Tempo de Compilação
+
+Uma das funcionalidades mais poderosas do url-ast é a **inferência de tipos em tempo de compilação** a partir de template string literals. Ao escrever uma string como `'/users/:id.number?active.boolean'`, o TypeScript automaticamente infere os tipos dos parâmetros extraídos.
+
+## Como funciona
+
+O url-ast usa **template literal types** do TypeScript para parsear a string de template e gerar tipos correspondentes:
+
+```typescript
+import { Analyze } from 'url-ast'
+
+// O TypeScript infere o tipo de `parsed.getParams()` como { id: number }
+const template = Analyze.create('/users/:id.number')
+const parsed = Analyze.create('/users/42', template)
+
+const params = parsed.getParams()
+//    ^? { id: number }
+```
+
+Sem template, os tipos são genéricos:
+
+```typescript
+const standalone = new Analyze('/users/:id')
+const params = standalone.getParams()
+//    ^? string[] (apenas nomes dos parâmetros)
+```
+
+## `ParsePath<T>` — o tipo central
+
+O tipo `ParsePath<T>` é a base de toda a inferência. Ele disassembla a string em três partes:
+
+```typescript
+import type { ParsePath } from 'url-ast'
+
+type Route = ParsePath<'/api/users/:id.number/posts/[slug]?page.number&tags.array#section'>
+```
+
+Resulta em:
+
+```typescript
+{
+  params: {
+    id: number
+    slug: string
+  }
+  searchParams: {
+    page: number
+    tags: string[]
+  }
+  fragment: {
+    section: string
+  }
+}
+```
+
+## Tipos suportados na inferência
+
+| Anotação | Tipo inferido |
+| :--- | :--- |
+| `.number` | `number` |
+| `.boolean` | `boolean` |
+| `.string` (ou omitido) | `string` |
+| `.array` | `string[]` |
+| `.enum[a,b,c]` | `'a' \| 'b' \| 'c'` |
+| `~` (prefixo) | `T \| undefined` |
+
+## Exemplos avançados
+
+### Catch-all
+
+```typescript
+type DocsRoute = ParsePath<'/docs/[...path]'>
+// { params: { path: string[] }, searchParams: {}, fragment: {} }
+```
+
+### Parâmetro opcional com tipo
+
+```typescript
+type OptRoute = ParsePath<'/posts/:id/comments/:~commentId.number'>
+// { params: { id: string, commentId: number | undefined }, ... }
+```
+
+### Enum tipado
+
+```typescript
+type ThemeRoute = ParsePath<'/theme/:mode.enum[dark,light]'>
+// { params: { mode: 'dark' | 'light' }, ... }
+```
+
+### Query com default
+
+```typescript
+type SearchRoute = ParsePath<'/search?q&page.number=1'>
+// { ..., searchParams: { q: string, page: number }, ... }
+```
+
+## Usando em código real
+
+### Com generics condicionais
+
+```typescript
+import type { ParsePath, ParseParams } from 'url-ast'
+
+function createHandler<T extends string>(
+  route: T,
+  handler: (params: ParseParams<T>) => void
+) {
+  // ...
+}
+
+createHandler('/users/:id.number', (params) => {
+  console.log(params.id) // TypeScript sabe que é `number`
+})
+```
+
+### Tipando rotas de um framework
+
+```typescript
+import type { ParsePath } from 'url-ast'
+
+type Routes = {
+  '/users/:id.number': ParsePath<'/users/:id.number'>
+  '/posts/[slug]?tags.array': ParsePath<'/posts/[slug]?tags.array'>
+}
+
+// Agora Routes['/users/:id.number'].params.id é `number`
+```
+
+## Requisitos
+
+- **TypeScript ^5** (peer dependency)
+- Template strings devem ser **literais** (`const route = '/path' as const` ou passadas diretamente)
+- Generics funcionam com `extends string` para preservar o literal type

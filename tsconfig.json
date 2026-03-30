@@ -1,34 +1,39 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
+    "target": "es2024",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
+    "forceConsistentCasingInFileNames": true,
     "noEmit": true,
+    "incremental": true,
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
-    "incremental": true,
+    "moduleResolution": "bundler",
+    "paths": {
+      "@app/*": ["./app/*"],
+      "@/components/*": ["./app/_components/*"],
+      "@/lib/*": ["./app/_lib/*"],
+      "@/hooks/*": ["./app/_hooks/*"]
+    },
     "plugins": [
       {
         "name": "next"
       }
     ],
-    "paths": {
-      "@/*": ["./*"]
-    }
+    "strictNullChecks": true,
+    "noUncheckedIndexedAccess": true
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
-  ],
-  "exclude": ["node_modules"]
+    ".next/dev/types/**/*.ts"
+, "app/_components/ui/codeblock"  ],
+  "exclude": ["node_modules", ".next"]
 }
