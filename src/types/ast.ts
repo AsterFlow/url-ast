@@ -32,15 +32,15 @@ export interface BaseNode<NodeType extends OriginExpression | InternalExpression
   optional: boolean
 }
 
-export interface ProtocolNode extends BaseNode<OriginExpression.Protocol> {}
-export interface SeparatorNode extends BaseNode<OriginExpression.Separator> {}
-export interface HostNode extends BaseNode<OriginExpression.Hostname> {}
-export interface PortNode extends BaseNode<OriginExpression.Port> {}
+export type ProtocolNode = BaseNode<OriginExpression.Protocol>
+export type SeparatorNode = BaseNode<OriginExpression.Separator>
+export type HostNode = BaseNode<OriginExpression.Hostname>
+export type PortNode = BaseNode<OriginExpression.Port>
 
 export interface PathExpressionNode extends BaseNode<InternalExpression.Path> {
   body: PathSegmentNode[]
 }
-export interface PathSegmentNode extends BaseNode<InternalExpression.Path> {}
+export type PathSegmentNode = BaseNode<InternalExpression.Path>
 
 export interface QueryExpressionNode extends BaseNode<ParameterDelimiters.Query> {
   body: QueryParameterNode[]
@@ -49,7 +49,7 @@ export interface QueryParameterNode extends BaseNode<InternalExpression.Paramete
   parameterType: ContentTypes
 }
 
-export interface CatchAllSegmentNode extends BaseNode<InternalExpression.Dynamic> {}
+export type CatchAllSegmentNode = BaseNode<InternalExpression.Dynamic>
 
 export type ASTNode =
   | ProtocolNode
@@ -61,8 +61,6 @@ export type ASTNode =
   | QueryExpressionNode
   | QueryParameterNode
   | CatchAllSegmentNode
-
-// ─── AST JSON Output Structure ──────────────────────────────────────
 
 export type NodeJSON = {
   id: number
