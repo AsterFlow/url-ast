@@ -19,6 +19,7 @@ publish.ts
 test.ts
 *.test.ts
 PUBLISHING.md
+CHANGELOG.md
 
 # Lock files
 bun.lockb

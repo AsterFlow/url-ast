@@ -21,14 +21,16 @@
 
 url-ast is a specialized module for analyzing and manipulating URLs using an Abstract Syntax Tree (AST) approach. It provides deep and structured URL analysis, transforming URLs into interconnected nodes that represent each component (protocol, hostname, parameters, etc.), facilitating manipulation and validation with full TypeScript support and automatic type casting.
 
+📖 **[Full Documentation](https://asterflow.github.io/url-ast)**
+
 -----
 
 ## 🚀 Key Features
 
 * **AST-Based Analysis**: Deep URL structure analysis through interconnected nodes for precise parsing
-* **Automatic Type Casting**: Built-in support for number, boolean, string, and array type conversion
+* **Automatic Type Casting**: Built-in support for number, boolean, string, array, and enum type conversion
 * **Full TypeScript Support**: Complete type inference for parameters and values with compile-time safety
-* **Pattern Matching**: Advanced support for route patterns with dynamic parameters and catch-all routes
+* **Pattern Matching**: Advanced support for route patterns with dynamic, optional, and catch-all parameters
 * **High Performance**: Optimized parser with efficient buffer handling and minimal overhead
 * **UTF-8 Decoding**: Robust support for special characters and encoded URLs
 * **Visual Debugging**: Colored visualization of URL structure for easy debugging and analysis
@@ -48,66 +50,49 @@ bun add url-ast
 
 -----
 
-## 📚 Examples
+## 🛣️ Supported Routing Patterns
 
-For more detailed examples on how to use all the features of **url-ast**, check out our [examples directory](https://github.com/AsterFlow/url-ast/tree/main/examples).
+| Pattern | Syntax | URL Example | Description |
+| :--- | :--- | :--- | :--- |
+| **Static** | `/exact/path` | `/about/contact` | Requires exact match. No variables captured. |
+| **Dynamic (colon)** | `/:param` | `/users/:id` | Captures a single URL segment. |
+| **Dynamic (bracket)** | `/[param]` | `/posts/[slug]` | Bracket syntax, Next.js/SvelteKit style. |
+| **Dynamic with type** | `/:param.type` or `/[param.type]` | `/users/:id.number` | Captures and converts the type automatically. |
+| **Optional** | `/:~param` or `/[~param]` | `/posts/:id/comments/:~commentId` | Parameter can be `undefined`. |
+| **Catch-all** | `/[...slug]` | `/docs/[...path]` | Captures multiple segments as `string[]`. |
+| **Optional catch-all** | `/[[...slug]]` | `/blog/[[...slug]]` | Base route remains valid without parameters. |
+| **Query params** | `?param` | `?sort=desc&limit=10` | Captures query string arguments. |
+| **Query with type** | `?param.type` | `?page.number&active.boolean` | Query params with type casting. |
+| **Query with default** | `?param.type=value` | `?page.number=1` | Query with type and default value. |
+| **Fragment (hash)** | `#section` | `#introduction` | Captures the anchor at the end of the URL. |
 
 -----
 
-## 🏁 Getting Started
+## 🎯 Type Casting
 
-Here's a quick example to get you up and running:
+| Type | Syntax | Description | Input → Output |
+| :--- | :--- | :--- | :--- |
+| **String** | `.string` (or omitted) | Default behavior. Preserves the text. | `user_123` → `'user_123'` |
+| **Number** | `.number` | Converts to a numeric value. | `-42` → `-42` |
+| **Boolean** | `.boolean` | Analyzes intent and converts to boolean. | `true` or `1` → `true` |
+| **Array** | `.array` | Splits values by comma into a list. | `a,b,c` → `['a', 'b', 'c']` |
+| **Enum** | `.enum[op1,op2]` | Restricts values to an allowed list. | `admin` → `'admin'` |
+| **Generic enum** | `.enum` | Enum without variant restriction. | `anything` → `'anything'` |
+
+-----
+
+## 🏁 Quick Start
 
 ```typescript
 import { Analyze } from 'url-ast'
 
-// URL template with typed parameters
-const template = new Analyze('/api/users/:id=number/posts/:postId=string?sort=boolean&tags=array')
+const template = new Analyze('/users/:id.number')
+const parsed = new Analyze('/users/42', template)
 
-// Parse a real URL using the template
-const analyzer = new Analyze('/api/users/123/posts/hello-world?sort=true&tags=tech,typescript', template)
-
-// Get typed path parameters
-console.log(analyzer.getParams())
-// { id: 123, postId: 'hello-world' }
-
-// Get typed search parameters  
-console.log(analyzer.getSearchParams())
-// { sort: true, tags: ['tech', 'typescript'] }
-
-// Display visual analysis
-console.log(analyzer.ast.display())
+parsed.getParams()        // { id: 42 }
 ```
 
------
-
-## 🛣️ Route Patterns
-
-url-ast supports various routing patterns for flexible URL matching:
-
-| Type | Syntax | Example | Description |
-| :--- | :--- | :--- | :--- |
-| **Static** | `/path/to/page` | `/about/contact` | Matches the exact path |
-| **Dynamic** | `/:param` | `/users/:id` | Matches any segment and captures value |
-| **Typed Dynamic** | `/:param=type` | `/users/:id=number` | Dynamic with automatic type casting |
-| **Query Parameters** | `?param=value` | `?sort=true&limit=10` | URL search parameters |
-| **Typed Query** | `?param=type` | `?active=boolean&limit=number` | Query params with type casting |
-| **Fragment** | `#section` | `#introduction` | Hash fragment identifier |
-
------
-
-## 🎯 Type Casting System
-
-The parser supports automatic type casting for path and query parameters, providing type-safe parameter extraction.
-
-### Supported Types
-
-| Type | Syntax | Description | Example |
-| :--- | :--- | :--- | :--- |
-| **Number** | `:param=number` | Converts to numeric values (integers, decimals, negatives) | `123`, `-42`, `99.99` |
-| **Boolean** | `:param=boolean` | Converts to boolean (`true`/`false`, `1`/`0`, case-insensitive) | `true`, `false`, `1`, `0` |
-| **String** | `:param=string` or `:param` | Default type, keeps as string | `hello-world`, `user_123` |
-| **Array** | `:param=array` | Converts comma-separated values to array | `red,green,blue` → `['red', 'green', 'blue']` |
+For more examples, check the [examples directory](https://github.com/AsterFlow/url-ast/tree/main/examples) or the [full documentation](https://asterflow.github.io/url-ast).
 
 -----
 
