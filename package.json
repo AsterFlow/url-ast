@@ -2,7 +2,7 @@
   "name": "url-ast",
   "version": "2.0.3",
   "description": "High-performance typed URL parser with AST-based analysis, automatic type casting, and route pattern matching for modern web applications",
-  "main": "dist/cjs/index.cjs",
+  "main": "dist/cjs/index.js",
   "module": "dist/mjs/index.js",
   "types": "dist/types/index.d.ts",
   "typings": "dist/types/index.d.ts",
@@ -45,7 +45,7 @@
     ".": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/mjs/index.js",
-      "require": "./dist/cjs/index.cjs"
+      "require": "./dist/cjs/index.js"
     }
   },
   "engines": {
@@ -69,10 +69,9 @@
     "dts-bundle-generator": "^9.5.1",
     "eslint": "^9.39.4",
     "globals": "^16.5.0",
-    "tsup": "^8.5.1",
     "typedoc": "^0.28.18",
     "typedoc-plugin-markdown": "^4.11.0",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.2",
     "typescript-eslint": "^8.57.2"
   },
   "peerDependencies": {

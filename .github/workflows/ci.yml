@@ -11,6 +11,8 @@ jobs:
   test:
     name: Test and Build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
       - name: Checkout repository
@@ -39,7 +41,10 @@ jobs:
         run: bun run test:coverage
 
       - name: Build Project
-        run: bun run build
+        id: bundle_size
+        run: |
+          STATS=$(bun run build | tail -n 1)
+          echo "stats=$STATS" >> $GITHUB_OUTPUT
 
       - name: Upload Coverage Results
         if: always()
@@ -48,3 +53,32 @@ jobs:
           name: coverage-report
           path: coverage/
           retention-days: 7
+
+      - name: Update README with Bundle Size
+        run: |
+          STATS='${{ steps.bundle_size.outputs.stats }}'
+          UNCOMPRESSED=$(echo $STATS | jq -r '.uncompressedSize')
+          COMPRESSED=$(echo $STATS | jq -r '.compressedSize')
+          
+          # Construindo o novo conteúdo sem quebra de linha
+          printf -- "<!-- BUNDLE_SIZE_START -->\`%s\` (Minified) / \`%s\` (Gzipped)<!-- BUNDLE_SIZE_END -->" "$UNCOMPRESSED" "$COMPRESSED" > bundle_info.txt
+          
+          # Usando perl para substituição multiline
+          perl -0777 -i -pe 'BEGIN{undef $/; open(F, "<bundle_info.txt"); $n=<F>; close(F)} s/<!-- BUNDLE_SIZE_START -->.*?<!-- BUNDLE_SIZE_END -->/$n/gs' README.md
+          rm bundle_info.txt
+
+      - name: Commit and Push changes
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          if ! git diff --staged --quiet; then
+            git log -1 --pretty=%B > .git/commit_message
+            if ! grep -q "\[skip ci\]" .git/commit_message; then
+              echo "" >> .git/commit_message
+              echo "[skip ci]" >> .git/commit_message
+            fi
+            git commit --amend -F .git/commit_message
+            git push --force
+          fi
