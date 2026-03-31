@@ -19,7 +19,7 @@
 
 > High-performance typed URL parser with automatic type casting and AST-based analysis.
 
-url-ast is a specialized module for analyzing and manipulating URLs using an Abstract Syntax Tree (AST) approach. It provides deep and structured URL analysis, transforming URLs into interconnected nodes that represent each component (protocol, hostname, parameters, etc.), facilitating manipulation and validation with full TypeScript support and automatic type casting.
+url-ast is a specialized module for analyzing and manipulating URLs using an Abstract Syntax Tree (AST) approach. It provides deep and structured URL analysis, transforming URLs into interconnected nodes that represent each component (protocol, hostname, parameters, etc.), facilitating manipulation and validation with full TypeScript support and automatic type casting, with a footprint of <!-- BUNDLE_SIZE_START --> <!-- BUNDLE_SIZE_END -->.
 
 📖 **[Full Documentation](https://asterflow.github.io/url-ast)**
 
