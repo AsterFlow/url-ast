@@ -47,9 +47,10 @@ export let isWasmAvailable = /* true depois de inicializar */
 
 Por ser síncrona, `Analyze`, `AST` e `parse` já ficam utilizáveis logo após o import — **não há `init()` assíncrono para aguardar**.
 
-<Callout type="warning">
-  O build publicado tem **target Node**. Ele carrega o binário via `node:fs`, então,
-  como publicado, não é feito para rodar diretamente no navegador. Requer Node.js **≥ 20**.
+<Callout type="info">
+  A entrada padrão tem **target Node** e carrega o binário via `node:fs` no import
+  (Node.js **≥ 20**). Desde a **v4.1** também é publicada uma entrada para navegador/edge
+  — veja [Navegador & edge](#navegador--edge) abaixo.
 </Callout>
 
 ### Detectando disponibilidade
@@ -72,6 +73,37 @@ Uma chamada de parse retorna uma view sobre a memória linear da engine — **se
 - `u16` contagem de erros, seguida por cada erro como `u16 codeLen, code, u16 msgLen, msg, u32 start, u32 end`
 
 O resultado decodificado é um `{ nodes: Node[]; errors: ErrorLog[] }` simples — a mesma forma que o resto da API consome, então nada a jusante sabe que o trabalho aconteceu em Rust.
+
+## Navegador & edge
+
+Desde a **v4.1**, uma entrada de navegador roda a mesma engine com **nenhum componente
+Node**. Ela não lê de `node:fs` e não inicializa sozinha — você chama um `initWasm()`
+assíncrono uma vez antes de usar a API:
+
+```ts
+import { initWasm, Analyze } from 'url-ast/browser'
+import wasmUrl from 'url-ast/wasm/wasm_bg.wasm?url'
+
+await initWasm(wasmUrl)                 // carrega + instancia o binário WASM
+new Analyze('/users/:id.number')
+```
+
+`initWasm(input?)` aceita uma URL/string para `fetch`, uma `Response`, bytes crus ou um
+`WebAssembly.Module` pré-compilado. Sem argumento, usa por padrão
+`new URL('wasm_bg.wasm', import.meta.url)`. É seguro chamar várias vezes — chamadas
+posteriores resolvem imediatamente quando a engine já está pronta.
+
+A camada de serialização também deixou de usar a API `Buffer` (exclusiva do Node) e
+passou para `Uint8Array` / `DataView`, então `getBuffer()` / `fromBuffer()` funcionam no
+navegador também. Os exports condicionais do `package.json` roteiam o Node para o build
+síncrono e os bundlers para este, automaticamente, então `import 'url-ast'` continua
+funcionando nos dois.
+
+<Callout type="info">
+  É exatamente assim que esta documentação roda os exemplos interativos: o seletor de
+  versão carrega `url-ast/browser` para a linha `^v4` (e a engine `^v3` legada caso
+  contrário) atrás de uma fachada de engine unificada.
+</Callout>
 
 ## Orientação para bundlers
 

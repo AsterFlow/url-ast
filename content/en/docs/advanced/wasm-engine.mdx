@@ -47,9 +47,10 @@ export let isWasmAvailable = /* true once initialized */
 
 Because it is synchronous, `Analyze`, `AST`, and `parse` are usable immediately after import — there is **no async `init()` to await**.
 
-<Callout type="warning">
-  The published build is **Node-targeted**. It loads the binary via `node:fs`, so as
-  shipped it is not meant to run directly in a browser. Node.js **≥ 20** is required.
+<Callout type="info">
+  The default entry is **Node-targeted** and loads the binary via `node:fs` at import
+  (Node.js **≥ 20**). Since **v4.1** a browser/edge entry is also published — see
+  [Browser & edge](#browser--edge) below.
 </Callout>
 
 ### Detecting availability
@@ -72,6 +73,36 @@ A parse call returns a view over the engine's linear memory — **no copy out**.
 - `u16` error count, followed by each error as `u16 codeLen, code, u16 msgLen, msg, u32 start, u32 end`
 
 The decoded result is a plain `{ nodes: Node[]; errors: ErrorLog[] }` — the same shape the rest of the API consumes, so nothing downstream is aware the work happened in Rust.
+
+## Browser & edge
+
+Since **v4.1**, a browser entry runs the same engine with **no Node components**. It
+does not read from `node:fs` and does not auto-initialise — you call an async
+`initWasm()` once before using the API:
+
+```ts
+import { initWasm, Analyze } from 'url-ast/browser'
+import wasmUrl from 'url-ast/wasm/wasm_bg.wasm?url'
+
+await initWasm(wasmUrl)                 // load + instantiate the WASM binary
+new Analyze('/users/:id.number')
+```
+
+`initWasm(input?)` accepts a URL/string to `fetch`, a `Response`, raw bytes, or a
+pre-compiled `WebAssembly.Module`. With no argument it defaults to
+`new URL('wasm_bg.wasm', import.meta.url)`. It is safe to call repeatedly — later
+calls resolve immediately once the engine is ready.
+
+The serialization layer was also moved off the Node-only `Buffer` API onto
+`Uint8Array` / `DataView`, so `getBuffer()` / `fromBuffer()` work in the browser too.
+`package.json` conditional exports route Node to the synchronous build and bundlers
+to this one automatically, so `import 'url-ast'` keeps working on both.
+
+<Callout type="info">
+  This is exactly how these docs run their live examples: the version switcher loads
+  `url-ast/browser` for the `^v4` line (and the legacy `^v3` engine otherwise) behind a
+  small unified engine facade.
+</Callout>
 
 ## Bundler guidance
 

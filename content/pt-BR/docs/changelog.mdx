@@ -4,6 +4,25 @@ Histórico completo de alterações do url-ast.
 
 ---
 
+## [4.1.0] - 2026-07-06
+
+### Adicionado
+
+- **Suporte a navegador & edge.** Uma nova entrada `url-ast/browser` roda a engine Rust/WASM sem componentes Node, via um `initWasm(input?)` assíncrono que carrega o binário a partir de uma URL, `Response`, bytes ou módulo compilado.
+- O binário WASM cru agora fica acessível em `url-ast/wasm/wasm_bg.wasm` para imports de asset no estilo `?url`.
+- `initWasm` e `isWasmAvailable` também são exportados na raiz.
+
+### Alterado
+
+- A serialização deixou de usar a API `Buffer` (exclusiva do Node) e passou para `Uint8Array` / `DataView` / `TextEncoder` / `TextDecoder` padrão da web, então a engine roda em qualquer lugar. `getBuffer()` agora retorna `Uint8Array` (um `Buffer` é um deles, então a maioria dos consumidores não é afetada); `writeToBuffer` / `fromBuffer` ampliam o parâmetro de `Buffer` para `Uint8Array`.
+- Os exports condicionais no `package.json` mantêm o init síncrono zero-config no Node enquanto bundlers resolvem o build de navegador.
+
+### Compatibilidade
+
+- Totalmente retrocompatível com a v4.0.0 no Node. A única mudança de comportamento é `getBuffer()` retornar `Uint8Array` em vez de `Buffer`.
+
+---
+
 ## [4.0.0] - 2026-07-06
 
 ### Alterado
