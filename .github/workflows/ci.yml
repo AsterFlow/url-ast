@@ -28,6 +28,24 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Setup Rust toolchain (WASM)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.93.1
+          targets: wasm32-unknown-unknown
+          components: rust-src
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install WASM tooling
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen-cli@0.2.117,wasm-opt
+
+      - name: Build WASM engine
+        run: bun run build:wasm
+
       - name: Run Linter
         run: bun run lint
 

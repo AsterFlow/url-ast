@@ -13,7 +13,16 @@ set -euo pipefail
 export RUSTUP_HOME="${RUSTUP_HOME:-$HOME/.rustup}"
 export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}"
 TC="$RUSTUP_HOME/toolchains/1.93.1-x86_64-unknown-linux-gnu"
-export PATH="$TC/bin:$HOME/.local/bin:$PATH"
+export PATH="$TC/bin:$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
+
+# Prefer the pinned toolchain; fall back to whatever cargo is active (CI installs
+# 1.93.1 via rustup, but the exact triple/path can differ across runners).
+CARGO="$TC/bin/cargo"
+if [ ! -x "$CARGO" ]; then
+  CARGO="$(command -v cargo)"
+  TC="$(rustc --print sysroot)"
+  echo "  pinned toolchain not found, using active cargo: $CARGO (sysroot $TC)"
+fi
 
 cd "$(dirname "$0")/.."
 
@@ -27,7 +36,7 @@ echo "[1/4] cargo build (wasm32)"
 BUILD_STD_OK=0
 if [ -d "$TC/lib/rustlib/src/rust/library/std" ]; then
   if RUSTC_BOOTSTRAP=1 RUSTFLAGS="-Zunstable-options -Cpanic=immediate-abort" \
-      "$TC/bin/cargo" build --release --target wasm32-unknown-unknown --lib \
+      "$CARGO" build --release --target wasm32-unknown-unknown --lib \
       -Z build-std=std,panic_abort; then
     BUILD_STD_OK=1
     echo "  built with -Z build-std + panic=immediate-abort"
@@ -35,7 +44,7 @@ if [ -d "$TC/lib/rustlib/src/rust/library/std" ]; then
 fi
 if [ "$BUILD_STD_OK" -eq 0 ]; then
   echo "  build-std unavailable, plain release build (run: rustup component add rust-src)"
-  "$TC/bin/cargo" build --release --target wasm32-unknown-unknown --lib
+  "$CARGO" build --release --target wasm32-unknown-unknown --lib
 fi
 
 RAW=target/wasm32-unknown-unknown/release/wasm.wasm
