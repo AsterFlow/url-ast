@@ -1,0 +1,20 @@
+{
+  "name": "bench",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "fast-querystring": "^1.1.2",
+    "qs": "^6.15.0",
+    "query-string": "^9.3.1",
+    "tinybench": "^6.0.0",
+    "url-ast-v3": "npm:url-ast@3.0.1",
+    "url-parse": "^1.5.10"
+  }
+}
