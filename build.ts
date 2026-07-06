@@ -25,6 +25,29 @@ async function buildWasm(): Promise<void> {
   }
 }
 
+/**
+ * Retargets the wasm-bindgen glue's default init path in the browser bundle from
+ * `new URL('wasm_bg.wasm', import.meta.url)` to the shared binary in `dist/wasm`.
+ *
+ * Bundlers (webpack/Turbopack) resolve that `new URL(...)` statically relative to
+ * the bundle, so the referenced file must exist on disk. Pointing it at the single
+ * `dist/wasm/wasm_bg.wasm` keeps the browser bundle lightweight — no duplicated
+ * binary beside it.
+ */
+async function pointBrowserBundleAtSharedWasm(bundlePath: string): Promise<void> {
+  const source = await readFile(bundlePath, 'utf-8')
+  const pattern = /new URL\((["'])wasm_bg\.wasm\1,\s*import\.meta\.url\)/g
+  const patched = source.replace(pattern, 'new URL($1../wasm/wasm_bg.wasm$1, import.meta.url)')
+
+  if (patched === source) {
+    throw new Error(
+      'Could not retarget the wasm path in dist/browser/browser.js; the wasm-bindgen glue output may have changed.'
+    )
+  }
+
+  await writeFile(bundlePath, patched)
+}
+
 async function writePackageJson(directoryPath: string, moduleType: 'commonjs' | 'module'): Promise<void> {
   const packageJsonPath = join(directoryPath, 'package.json')
   const packageJsonContent = JSON.stringify({ type: moduleType }, null, 2)
@@ -87,6 +110,8 @@ async function generateTypes(sourceFilePath: string, outputDirectory: string): P
   await writePackageJson('dist/cjs', 'commonjs')
   await writePackageJson('dist/mjs', 'module')
   await writePackageJson('dist/browser', 'module')
+
+  await pointBrowserBundleAtSharedWasm(join(currentWorkingDirectory, 'dist/browser/browser.js'))
 
   await generateTypes(join(currentWorkingDirectory, 'src/index.ts'), join(currentWorkingDirectory, 'dist/types'))
 
