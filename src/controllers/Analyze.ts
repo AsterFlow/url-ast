@@ -20,6 +20,7 @@ import {
   analyzeSearchTemplateWasm,
   analyzeStaticPropsWasm,
 } from '../wasmBridge'
+import { toView } from '../utils/binary'
 import { AST } from './AST'
 import { ErrorLog } from './Error'
 
@@ -151,28 +152,29 @@ const AnalyzeImpl = class Analyze {
    *
    * Layout: `u32 astLength`, AST data, `u8 hasBase`, then optional `u32 baseLength` + base data.
    */
-  getBuffer(): Buffer {
+  getBuffer(): Uint8Array {
     const astBuffer = this.ast.getBuffer()
     const baseBuffer = this.base?.getBuffer()
 
     const baseLength = baseBuffer?.length ?? 0
     const totalSize = 4 + astBuffer.length + 1 + (baseLength ? 4 + baseLength : 0)
-    const buffer = Buffer.alloc(totalSize)
+    const buffer = new Uint8Array(totalSize)
+    const view = toView(buffer)
 
     let cursor = 0
-    buffer.writeUInt32LE(astBuffer.length, cursor)
+    view.setUint32(cursor, astBuffer.length, true)
     cursor += 4
 
-    astBuffer.copy(buffer, cursor)
+    buffer.set(astBuffer, cursor)
     cursor += astBuffer.length
 
-    buffer.writeUInt8(baseBuffer ? 1 : 0, cursor)
+    view.setUint8(cursor, baseBuffer ? 1 : 0)
     cursor += 1
 
     if (baseBuffer) {
-      buffer.writeUInt32LE(baseLength, cursor)
+      view.setUint32(cursor, baseLength, true)
       cursor += 4
-      baseBuffer.copy(buffer, cursor)
+      buffer.set(baseBuffer, cursor)
     }
 
     return buffer
@@ -184,21 +186,22 @@ const AnalyzeImpl = class Analyze {
     return new AnalyzeImpl(input, base)
   }
 
-  static fromBuffer(buffer: Buffer): AnalyzeChain {
+  static fromBuffer(buffer: Uint8Array): AnalyzeChain {
+    const view = toView(buffer)
     let cursor = 0
 
-    const astLength = buffer.readUInt32LE(cursor)
+    const astLength = view.getUint32(cursor, true)
     cursor += 4
 
     const ast = AST.fromBuffer(buffer.subarray(cursor, cursor + astLength))
     cursor += astLength
 
-    const hasBase = buffer.readUInt8(cursor) === 1
+    const hasBase = view.getUint8(cursor) === 1
     cursor += 1
 
     let base: AnalyzeChain | undefined
     if (hasBase) {
-      const baseLength = buffer.readUInt32LE(cursor)
+      const baseLength = view.getUint32(cursor, true)
       cursor += 4
       base = Analyze.fromBuffer(buffer.subarray(cursor, cursor + baseLength))
     }

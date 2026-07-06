@@ -14,7 +14,8 @@ import {
 } from 'wasm/wasm'
 import { ErrorLog } from './controllers/Error'
 import { Node } from './controllers/Node'
-import { isWasmAvailable } from './initWasmSync'
+import { decodeUtf8, toView } from './utils/binary'
+import { isWasmAvailable } from './wasmState'
 
 export { isWasmAvailable }
 
@@ -41,36 +42,36 @@ export interface WasmParseResult {
  */
 export function parsePathWasm(input: string): WasmParseResult {
   // `parsePathView` returns a Uint8Array aliasing WASM linear memory (no copy out).
-  // Wrap it in a Buffer view (also no copy) and decode synchronously before any
+  // Wrap it in a DataView (also no copy) and decode synchronously before any
   // further WASM call can invalidate the shared buffer.
   const shared = parsePathView(input)
-  const view = Buffer.from(shared.buffer, shared.byteOffset, shared.byteLength)
+  const view = toView(shared)
 
   let offset = 0
-  const rootCount = view.readUInt16LE(offset)
+  const rootCount = view.getUint16(offset, true)
   offset += 2
 
-  const { nodes, newOffset } = Node.fromBuffer(view, offset, rootCount)
+  const { nodes, newOffset } = Node.fromBuffer(shared, offset, rootCount)
   offset = newOffset
 
-  const errorCount = view.readUInt16LE(offset)
+  const errorCount = view.getUint16(offset, true)
   offset += 2
 
   const errors: ErrorLog[] = []
   for (let i = 0; i < errorCount; i++) {
-    const codeLength = view.readUInt16LE(offset)
+    const codeLength = view.getUint16(offset, true)
     offset += 2
-    const code = view.toString('utf-8', offset, offset + codeLength)
+    const code = decodeUtf8(view, offset, codeLength)
     offset += codeLength
 
-    const messageLength = view.readUInt16LE(offset)
+    const messageLength = view.getUint16(offset, true)
     offset += 2
-    const message = view.toString('utf-8', offset, offset + messageLength)
+    const message = decodeUtf8(view, offset, messageLength)
     offset += messageLength
 
-    const start = view.readUInt32LE(offset)
+    const start = view.getUint32(offset, true)
     offset += 4
-    const end = view.readUInt32LE(offset)
+    const end = view.getUint32(offset, true)
     offset += 4
 
     errors.push(new ErrorLog(code, message, start, end))
@@ -82,41 +83,41 @@ export function parsePathWasm(input: string): WasmParseResult {
 // === analyzer result decoding ===
 
 interface Cursor {
-  view: Buffer
+  view: DataView
   offset: number
 }
 
-function asView(bytes: Uint8Array): Buffer {
-  return Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+function asView(bytes: Uint8Array): DataView {
+  return toView(bytes)
 }
 
 function readString(cursor: Cursor): string {
-  const length = cursor.view.readUInt32LE(cursor.offset)
+  const length = cursor.view.getUint32(cursor.offset, true)
   cursor.offset += 4
-  const value = cursor.view.toString('utf-8', cursor.offset, cursor.offset + length)
+  const value = decodeUtf8(cursor.view, cursor.offset, length)
   cursor.offset += length
   return value
 }
 
 function readValue(cursor: Cursor): WasmValue {
-  const tag = cursor.view.readUInt8(cursor.offset)
+  const tag = cursor.view.getUint8(cursor.offset)
   cursor.offset += 1
   switch (tag) {
   case 0:
     return readString(cursor)
   case 1: {
-    const num = cursor.view.readDoubleLE(cursor.offset)
+    const num = cursor.view.getFloat64(cursor.offset, true)
     cursor.offset += 8
     return num
   }
   case 2: {
-    const bool = cursor.view.readUInt8(cursor.offset) === 1
+    const bool = cursor.view.getUint8(cursor.offset) === 1
     cursor.offset += 1
     return bool
   }
   case 3:
   default: {
-    const count = cursor.view.readUInt32LE(cursor.offset)
+    const count = cursor.view.getUint32(cursor.offset, true)
     cursor.offset += 4
     const list: string[] = []
     for (let i = 0; i < count; i++) list.push(readString(cursor))
@@ -126,7 +127,7 @@ function readValue(cursor: Cursor): WasmValue {
 }
 
 function readMap(cursor: Cursor): [string, WasmValue][] {
-  const count = cursor.view.readUInt32LE(cursor.offset)
+  const count = cursor.view.getUint32(cursor.offset, true)
   cursor.offset += 4
   const entries: [string, WasmValue][] = []
   for (let i = 0; i < count; i++) {
@@ -138,23 +139,23 @@ function readMap(cursor: Cursor): [string, WasmValue][] {
 }
 
 function readErrorLog(cursor: Cursor): ErrorLog {
-  const codeLength = cursor.view.readUInt16LE(cursor.offset)
+  const codeLength = cursor.view.getUint16(cursor.offset, true)
   cursor.offset += 2
-  const code = cursor.view.toString('utf-8', cursor.offset, cursor.offset + codeLength)
+  const code = decodeUtf8(cursor.view, cursor.offset, codeLength)
   cursor.offset += codeLength
-  const messageLength = cursor.view.readUInt16LE(cursor.offset)
+  const messageLength = cursor.view.getUint16(cursor.offset, true)
   cursor.offset += 2
-  const message = cursor.view.toString('utf-8', cursor.offset, cursor.offset + messageLength)
+  const message = decodeUtf8(cursor.view, cursor.offset, messageLength)
   cursor.offset += messageLength
-  const start = cursor.view.readUInt32LE(cursor.offset)
+  const start = cursor.view.getUint32(cursor.offset, true)
   cursor.offset += 4
-  const end = cursor.view.readUInt32LE(cursor.offset)
+  const end = cursor.view.getUint32(cursor.offset, true)
   cursor.offset += 4
   return new ErrorLog(code, message, start, end)
 }
 
 function readErrors(cursor: Cursor): ErrorLog[] {
-  const count = cursor.view.readUInt32LE(cursor.offset)
+  const count = cursor.view.getUint32(cursor.offset, true)
   cursor.offset += 4
   const errors: ErrorLog[] = []
   for (let i = 0; i < count; i++) errors.push(readErrorLog(cursor))
@@ -168,7 +169,7 @@ export type InstanceResult =
 
 function decodeInstanceResult(bytes: Uint8Array): InstanceResult {
   const cursor: Cursor = { view: asView(bytes), offset: 0 }
-  const status = cursor.view.readUInt8(cursor.offset)
+  const status = cursor.view.getUint8(cursor.offset)
   cursor.offset += 1
   if (status === 1) {
     return { ok: false, error: readErrorLog(cursor) }
@@ -198,7 +199,7 @@ export function analyzeFragmentWasm(input: string): string | undefined {
 
 export function analyzeParamsTemplateWasm(input: string): { names: string[]; errors: ErrorLog[] } {
   const cursor: Cursor = { view: asView(analyzeParamsTemplate(input)), offset: 0 }
-  const count = cursor.view.readUInt32LE(cursor.offset)
+  const count = cursor.view.getUint32(cursor.offset, true)
   cursor.offset += 4
   const names: string[] = []
   for (let i = 0; i < count; i++) names.push(readString(cursor))
@@ -231,7 +232,7 @@ export function analyzeStaticPropsWasm(baseInput: string, input: string): [strin
 
 export function analyzeFragmentInstanceWasm(baseInput: string, input: string): [string, string][] {
   const cursor: Cursor = { view: asView(analyzeFragmentInstance(baseInput, input)), offset: 0 }
-  const count = cursor.view.readUInt32LE(cursor.offset)
+  const count = cursor.view.getUint32(cursor.offset, true)
   cursor.offset += 4
   const entries: [string, string][] = []
   for (let i = 0; i < count; i++) {

@@ -1,5 +1,6 @@
 import type { ASTOptionalOptions, ASTJSON, DisplayRow } from '../types/ast'
 import { GeneralDelimiters, InternalExpression, OriginExpression, ParameterDelimiters, RawTokens, type AllValues } from '../types/node'
+import { decodeUtf8, encodeUtf8, toView } from '../utils/binary'
 import { AnsiColor, colorize, expressionKeyColorMap } from '../utils/colors'
 import { colorizePath, renderTable } from '../utils/table'
 import { parsePathWasm } from '../wasmBridge'
@@ -308,10 +309,10 @@ export class AST<const Path extends string> {
    * 3. Node data (variable): binary payload for each `Node` and its children, written recursively.
    * 4. URL string (`urlLength` bytes): original input encoded as UTF-8.
    *
-   * @returns {Buffer} Buffer containing the serialized AST.
+   * @returns {Uint8Array} Bytes containing the serialized AST.
    */
-  getBuffer(): Buffer {
-    const urlBufferData = Buffer.from(this.input, 'utf-8')
+  getBuffer(): Uint8Array {
+    const urlBufferData = encodeUtf8(this.input)
     const rootNodeCount = this.nodes.length
 
     const calculateNodesSize = (nodesList: Node[]): number => {
@@ -324,20 +325,21 @@ export class AST<const Path extends string> {
 
     const totalNodesLength = calculateNodesSize(this.nodes)
 
-    const finalBuffer = Buffer.alloc(2 + 4 + totalNodesLength + urlBufferData.length)
+    const finalBuffer = new Uint8Array(2 + 4 + totalNodesLength + urlBufferData.length)
+    const view = toView(finalBuffer)
     let currentOffset = 0
 
-    finalBuffer.writeUInt16LE(rootNodeCount, currentOffset)
+    view.setUint16(currentOffset, rootNodeCount, true)
     currentOffset += 2
 
-    finalBuffer.writeUInt32LE(urlBufferData.length, currentOffset)
+    view.setUint32(currentOffset, urlBufferData.length, true)
     currentOffset += 4
 
     for (const node of this.nodes) {
       currentOffset = node.writeToBuffer(finalBuffer, currentOffset)
     }
 
-    urlBufferData.copy(finalBuffer, currentOffset)
+    finalBuffer.set(urlBufferData, currentOffset)
 
     return finalBuffer
   }
@@ -348,23 +350,24 @@ export class AST<const Path extends string> {
    * Reads the root-count and URL-length headers, parses nodes recursively via `Node.fromBuffer`,
    * then decodes the trailing UTF-8 input string.
    *
-   * @param {Buffer} buffer Buffer containing serialized AST data.
+   * @param {Uint8Array} buffer Bytes containing serialized AST data (a Node `Buffer` is also accepted).
    * @returns {AST<string>} A new AST instance.
    */
-  static fromBuffer(buffer: Buffer): AST<string> {
+  static fromBuffer(buffer: Uint8Array): AST<string> {
+    const view = toView(buffer)
     let currentOffset = 0
 
-    const rootNodeCount = buffer.readUInt16LE(currentOffset)
+    const rootNodeCount = view.getUint16(currentOffset, true)
     currentOffset += 2
 
-    const urlStringLength = buffer.readUInt32LE(currentOffset)
+    const urlStringLength = view.getUint32(currentOffset, true)
     currentOffset += 4
 
     const parsedData = Node.fromBuffer(buffer, currentOffset, rootNodeCount)
     const rootNodesList = parsedData.nodes
     currentOffset = parsedData.newOffset
 
-    const sourceInputString = buffer.toString('utf-8', currentOffset, currentOffset + urlStringLength)
+    const sourceInputString = decodeUtf8(view, currentOffset, urlStringLength)
 
     return new AST(sourceInputString, { nodes: rootNodesList })
   }

@@ -334,9 +334,9 @@ export type AnalyzeInstance<
    * 4. Base Length (optional, 4 bytes, LE): Byte size of the serialized base parser.
    * 5. Base Data (optional, variable): Recursively serialized base parser data.
    *
-   * @returns {Buffer} Buffer containing the serialized data.
+   * @returns {Uint8Array} Bytes containing the serialized data.
    */
-  getBuffer(): Buffer
+  getBuffer(): Uint8Array
 }
 
 /**
@@ -373,8 +373,8 @@ export interface AnalyzeConstructor {
    * Decodes the AST first, checks for a base parser flag, and if present,
    * reconstructs the base parser recursively before instantiating Analyze.
    *
-   * @param {Buffer} buffer The Buffer containing serialized data.
+   * @param {Uint8Array} buffer The bytes containing serialized data (a Node `Buffer` is also accepted).
    * @returns {AnalyzeChain} A reconstructed Analyze instance.
    */
-  fromBuffer(buffer: Buffer): AnalyzeChain
+  fromBuffer(buffer: Uint8Array): AnalyzeChain
 }

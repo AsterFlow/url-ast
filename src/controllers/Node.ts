@@ -1,5 +1,6 @@
 import type { NodeJSON } from '../types/ast'
 import { ContentTypes, InternalExpression, SemanticTokens, type AllValues } from '../types/node'
+import { toView } from '../utils/binary'
 
 export class Node {
   static readonly SIZE = 10 as const
@@ -95,18 +96,19 @@ export class Node {
   /**
    * Recursively writes this node and its descendants into a binary buffer.
    *
-   * @param {Buffer} buffer Target buffer.
+   * @param {Uint8Array} buffer Target buffer (a Node `Buffer` is also accepted).
    * @param {number} currentOffset Current write offset.
    * @returns {number} Next offset after this subtree has been written.
    */
-  writeToBuffer(buffer: Buffer, currentOffset: number): number {
-    buffer.writeUInt8(this.id, currentOffset)
-    buffer.writeUInt8(this.expression, currentOffset + 1)
-    buffer.writeUInt16LE(this.start, currentOffset + 2)
-    buffer.writeUInt16LE(this.end, currentOffset + 4)
-    buffer.writeUInt8(this.type, currentOffset + 6)
-    buffer.writeUInt8(this.optional ? 1 : 0, currentOffset + 7)
-    buffer.writeUInt16LE(this.body.length, currentOffset + 8)
+  writeToBuffer(buffer: Uint8Array, currentOffset: number): number {
+    const view = toView(buffer)
+    view.setUint8(currentOffset, this.id)
+    view.setUint8(currentOffset + 1, this.expression)
+    view.setUint16(currentOffset + 2, this.start, true)
+    view.setUint16(currentOffset + 4, this.end, true)
+    view.setUint8(currentOffset + 6, this.type)
+    view.setUint8(currentOffset + 7, this.optional ? 1 : 0)
+    view.setUint16(currentOffset + 8, this.body.length, true)
 
     let nextOffset = currentOffset + Node.SIZE
 
@@ -120,24 +122,25 @@ export class Node {
   /**
    * Recursively reads nodes and their children from a binary buffer.
    *
-   * @param {Buffer} buffer Source buffer.
+   * @param {Uint8Array} buffer Source buffer (a Node `Buffer` is also accepted).
    * @param {number} currentOffset Starting offset.
    * @param {number} nodeCount Number of sibling nodes to read at this level.
    * @returns {{ nodes: Node[], newOffset: number }} Parsed nodes and the offset after them.
    */
-  static fromBuffer(buffer: Buffer, currentOffset: number = 0, nodeCount: number): { nodes: Node[], newOffset: number } {
+  static fromBuffer(buffer: Uint8Array, currentOffset: number = 0, nodeCount: number): { nodes: Node[], newOffset: number } {
+    const view = toView(buffer)
     const parsedNodes: Node[] = []
     let nextOffset = currentOffset
 
     for (let index = 0; index < nodeCount; index++) {
-      const nodeId = buffer.readUInt8(nextOffset)
-      const nodeExpression = buffer.readUInt8(nextOffset + 1)
-      const nodeStart = buffer.readUInt16LE(nextOffset + 2)
-      const nodeEnd = buffer.readUInt16LE(nextOffset + 4)
-      const nodeType = buffer.readUInt8(nextOffset + 6)
-      const nodeOptional = buffer.readUInt8(nextOffset + 7) === 1
-      const childrenCount = buffer.readUInt16LE(nextOffset + 8)
-  
+      const nodeId = view.getUint8(nextOffset)
+      const nodeExpression = view.getUint8(nextOffset + 1)
+      const nodeStart = view.getUint16(nextOffset + 2, true)
+      const nodeEnd = view.getUint16(nextOffset + 4, true)
+      const nodeType = view.getUint8(nextOffset + 6)
+      const nodeOptional = view.getUint8(nextOffset + 7) === 1
+      const childrenCount = view.getUint16(nextOffset + 8, true)
+
       nextOffset += Node.SIZE
 
       const currentNode = new Node(nodeId, nodeExpression, nodeStart, nodeEnd, '', nodeType, nodeOptional)

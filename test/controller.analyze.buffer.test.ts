@@ -2,13 +2,14 @@ import { expect, describe, it } from 'bun:test'
 import { Analyze } from '../src'
 
 describe('Controller: Analyze (Buffer Serialization)', () => {
-  it('should return a Buffer with the correct structure', () => {
+  it('should return a Uint8Array with the correct structure', () => {
     const analyzer = new Analyze('/some/path')
     const buffer = analyzer.getBuffer()
-    expect(buffer).toBeInstanceOf(Buffer)
-    
+    expect(buffer).toBeInstanceOf(Uint8Array)
+
     // Format: 4 (astLength) + astBuffer + 1 (hasBase)
-    const astBufferLength = buffer.readUInt32LE(0)
+    const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+    const astBufferLength = view.getUint32(0, true)
     expect(buffer.length).toBe(4 + astBufferLength + 1)
   })
 
