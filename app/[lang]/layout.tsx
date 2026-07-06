@@ -14,6 +14,7 @@ import { getPageMap } from 'nextra/page-map'
 import type { ReactNode } from 'react'
 
 import { VersionSwitch } from '@/components/version-switch'
+import { EngineProvider } from '@/lib/engine'
 import { getDictionary } from '../_dictionaries/get-dictionary'
 import '../globals.css'
 
@@ -66,7 +67,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
       }
       projectLink="https://github.com/AsterFlow/url-ast"
     >
-      <VersionSwitch current="v4" />
+      <VersionSwitch />
       <LocaleSwitch lite />
     </Navbar>
   )
@@ -86,6 +87,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
         }}
       />
       <body>
+        <EngineProvider>
         <Layout
           navbar={navbar}
           footer={footer}
@@ -113,6 +115,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
         >
           {children}
         </Layout>
+        </EngineProvider>
       </body>
     </html>
   )

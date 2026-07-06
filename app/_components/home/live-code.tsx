@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useId } from 'react'
-import { Analyze, AST, ErrorLog } from 'url-ast'
+import { ENGINE_RELEASES, useEngine } from '@/lib/engine'
 import { Play, RotateCcw, AlertCircle, Maximize, Minimize } from 'lucide-react'
 import Editor, { useMonaco } from '@monaco-editor/react'
 
@@ -13,7 +13,8 @@ type OutputLogType = {
 
 export function LiveCode({ initialCode }: { initialCode: string }) {
   const uniqueComponentId = useId()
-  
+  const { engine, version } = useEngine()
+
   const [codeContent, setCodeContent] = useState(initialCode.trim())
   const [outputLogs, setOutputLogs] = useState<OutputLogType[]>([])
   const [errorMessage, setErrorMessage] = useState<string>('')
@@ -65,11 +66,17 @@ export function LiveCode({ initialCode }: { initialCode: string }) {
   }, [monacoEditorInstance])
 
   const executeCode = () => {
+    if (!engine) {
+      setErrorMessage('Loading the WASM engine…')
+      return
+    }
+
     setIsExecutingCode(true)
     setErrorMessage('')
     setOutputLogs([])
-    
+
     try {
+      const { Analyze, AST, ErrorLog } = engine.runtime
       const capturedLogsArray: OutputLogType[] = []
       
       const fakeConsole = {
@@ -166,10 +173,12 @@ export function LiveCode({ initialCode }: { initialCode: string }) {
     }
   }
 
+  // Run on mount and re-run whenever the engine (i.e. selected version) changes,
+  // so switching v4 ↔ v3 re-evaluates the sample against the other engine.
   useEffect(() => {
-    executeCode()
+    if (engine) executeCode()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [engine, version])
 
   const formatOutputValue = (valueData: unknown): string => {
     if (typeof valueData === 'string') return valueData
@@ -201,6 +210,12 @@ export function LiveCode({ initialCode }: { initialCode: string }) {
             <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
           </div>
           <span className="ml-2 text-xs font-medium text-zinc-400">Interactive Playground</span>
+          <span
+            className="ml-1 rounded-full bg-zinc-800 px-2 py-0.5 text-[0.625rem] font-semibold text-zinc-300 ring-1 ring-white/10"
+            title={`Engine: ${ENGINE_RELEASES[version].engine}`}
+          >
+            {ENGINE_RELEASES[version].short} · {ENGINE_RELEASES[version].engine}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <button

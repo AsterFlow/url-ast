@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import {
   Select,
   SelectContent,
@@ -8,46 +7,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { ENGINE_ORDER, ENGINE_RELEASES, useEngine, type EngineVersion } from '@/lib/engine'
 
 /**
- * A release version the docs can point at. `href` is `null` for the version
- * this site currently documents (selecting it is a no-op); every other entry
- * links out to where that release's reference lives (npm registry page).
+ * Release-version switcher in the docs navbar. Selecting a line swaps the engine
+ * that powers every live example: `^v4` runs the Rust/WASM engine, `^v3` the
+ * legacy TypeScript engine. The choice is persisted by the EngineProvider.
  */
-type DocsVersion = {
-  value: string
-  label: string
-  href: string | null
-}
-
-/**
- * The current docs site tracks the latest release. Older majors are not hosted
- * as versioned sites, so they link to their published npm pages instead.
- */
-const VERSIONS: DocsVersion[] = [
-  { value: 'v4', label: 'v4.0.0 (latest)', href: null },
-  { value: 'v3', label: 'v3.0.0', href: 'https://www.npmjs.com/package/url-ast/v/3.0.0' },
-  { value: 'v2', label: 'v2.x', href: 'https://www.npmjs.com/package/url-ast/v/2.0.3' },
-]
-
-/**
- * Release-version switcher rendered in the docs navbar. Selecting the current
- * version does nothing; selecting an older one navigates to its npm page.
- */
-export function VersionSwitch({ current = 'v4' }: { current?: string }) {
-  const [value, setValue] = useState(current)
-
-  function onChange(next: string) {
-    const target = VERSIONS.find((version) => version.value === next)
-    if (!target || target.href === null) {
-      setValue(next)
-      return
-    }
-    window.location.href = target.href
-  }
+export function VersionSwitch() {
+  const { version, setVersion } = useEngine()
 
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select value={version} onValueChange={(next) => setVersion(next as EngineVersion)}>
       <SelectTrigger
         size="sm"
         aria-label="Select documentation version"
@@ -56,9 +27,9 @@ export function VersionSwitch({ current = 'v4' }: { current?: string }) {
         <SelectValue />
       </SelectTrigger>
       <SelectContent align="end">
-        {VERSIONS.map((version) => (
-          <SelectItem key={version.value} value={version.value}>
-            {version.label}
+        {ENGINE_ORDER.map((value) => (
+          <SelectItem key={value} value={value}>
+            {ENGINE_RELEASES[value].label}
           </SelectItem>
         ))}
       </SelectContent>

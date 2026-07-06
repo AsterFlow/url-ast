@@ -1,8 +1,8 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { useEngine } from '@/lib/engine'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Analyze } from 'url-ast'
 
 const EXAMPLES = [
   'https://api.example.com:8080/posts/[[...slug]]?page.number=1&tags.array#section',
@@ -251,6 +251,7 @@ export function LiveParser({
   legendTitle = 'Hover over any segment to learn more',
   errorsTitle = 'Parsing Errors',
 }: LiveParserProps) {
+  const { engine } = useEngine()
   const [input, setInput] = useState(EXAMPLES[0])
   const [debouncedInput, setDebouncedInput] = useState(EXAMPLES[0])
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
@@ -318,26 +319,27 @@ export function LiveParser({
   }, [isInteracting])
 
   const segments = useMemo(() => {
+    const safeInput = input || ''
+    const raw = [{ text: safeInput, kind: 'delimiter' as SegmentKind, label: 'Raw', group: 'other' }]
+    if (!engine) return raw
     try {
-      const safeInput = input || ''
-      const parsed = new Analyze(safeInput)
-      const json = parsed.ast.toJSON(true)
+      const json = engine.astToJson(safeInput, true)
       return flattenNodes(safeInput, json, lang)
     } catch {
-      return [{ text: input || '', kind: 'delimiter' as SegmentKind, label: 'Raw', group: 'other' }]
+      return raw
     }
-  }, [input, lang])
+  }, [input, lang, engine])
 
   const errorsData = useMemo(() => {
+    if (!engine) return { errors: [], input: '' }
     try {
       if (input !== debouncedInput) return { errors: [], input: '' }
       if (!debouncedInput) return { errors: [], input: '' }
-      const parsed = new Analyze(debouncedInput!)
-      return { errors: parsed.hasErrors() ? parsed.errors : [], input: debouncedInput! }
+      return { errors: engine.errorsFor(debouncedInput), input: debouncedInput }
     } catch {
       return { errors: [], input: debouncedInput }
     }
-  }, [input, debouncedInput])
+  }, [input, debouncedInput, engine])
 
   const legendItems = useMemo(() => getLegendItems(lang), [lang])
   const hoveredSegment = hoveredIdx !== null ? segments[hoveredIdx] : null
