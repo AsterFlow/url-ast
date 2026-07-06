@@ -39,3 +39,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 /docs
 /.next
 /public
+
+# Rust / WASM build output
+/target
+/pkg
+/wasm/pkg
+Cargo.lock.bak

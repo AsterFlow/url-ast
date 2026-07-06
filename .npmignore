@@ -15,11 +15,17 @@
 
 # Development files
 build.ts
-publish.ts
-test.ts
 *.test.ts
-PUBLISHING.md
 CHANGELOG.md
+
+# Rust / WASM sources (only compiled dist/wasm ships)
+/wasm
+/bench
+/scripts
+Cargo.toml
+Cargo.lock
+rustfmt.toml
+BENCHMARK.md
 
 # Lock files
 bun.lockb
