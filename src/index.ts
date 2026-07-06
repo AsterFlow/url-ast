@@ -1,5 +1,8 @@
 import './initWasmSync'
 
+export { initWasm, type WasmInput } from './initWasm'
+export { isWasmAvailable } from './wasmState'
+
 export { parse, parseAndAnalyze } from './parse'
 
 export * from './controllers/AST'

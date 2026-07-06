@@ -50,9 +50,20 @@
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "import": "./dist/mjs/index.js",
+      "node": {
+        "import": "./dist/mjs/index.js",
+        "require": "./dist/cjs/index.js"
+      },
+      "browser": "./dist/browser/browser.js",
+      "import": "./dist/browser/browser.js",
       "require": "./dist/cjs/index.js"
-    }
+    },
+    "./browser": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/browser/browser.js"
+    },
+    "./wasm/wasm_bg.wasm": "./dist/wasm/wasm_bg.wasm",
+    "./package.json": "./package.json"
   },
   "engines": {
     "node": ">=20"

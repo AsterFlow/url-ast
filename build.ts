@@ -74,8 +74,19 @@ async function generateTypes(sourceFilePath: string, outputDirectory: string): P
     sourcemap: 'linked',
   })
 
+  // Browser/edge ESM bundle: no `node:fs`, engine initialised via async `initWasm`.
+  await build({
+    entrypoints: ['src/browser.ts'],
+    outdir: 'dist/browser',
+    format: 'esm',
+    target: 'browser',
+    minify: true,
+    sourcemap: 'linked',
+  })
+
   await writePackageJson('dist/cjs', 'commonjs')
   await writePackageJson('dist/mjs', 'module')
+  await writePackageJson('dist/browser', 'module')
 
   await generateTypes(join(currentWorkingDirectory, 'src/index.ts'), join(currentWorkingDirectory, 'dist/types'))
 
