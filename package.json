@@ -7,6 +7,12 @@
   "types": "dist/types/index.d.ts",
   "typings": "dist/types/index.d.ts",
   "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "license": "MIT",
   "author": "Ashu11-A",
   "repository": {
@@ -52,14 +58,14 @@
     "node": ">=20"
   },
   "scripts": {
-    "benchmark:constructor": "bun benchmarks/constructor.ts",
-    "benchmark:state": "bun benchmarks/state.ts",
+    "benchmark": "bun bench/src/index.ts",
     "dev": "bun run src/index.ts",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage",
     "lint": "eslint -c eslint.config.js --fix",
     "type-check": "tsc --noEmit",
+    "build:wasm": "bash scripts/build-wasm.sh",
     "build": "bun run build.ts"
   },
   "devDependencies": {

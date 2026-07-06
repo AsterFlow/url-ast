@@ -9,6 +9,9 @@
 
     // Bundler mode
     "moduleResolution": "bundler",
+    "paths": {
+      "wasm/*": ["./dist/wasm/*"]
+    },
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,

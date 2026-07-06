@@ -1,4 +1,4 @@
-import { build, gzipSync } from 'bun'
+import { build, gzipSync, spawn } from 'bun'
 import { generateDtsBundle } from 'dts-bundle-generator'
 import { existsSync, } from 'node:fs'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
@@ -7,6 +7,21 @@ import { dirname, join } from 'node:path'
 async function cleanDistDirectory(directoryPath: string): Promise<void> {
   if (existsSync(directoryPath)) {
     await rm(directoryPath, { recursive: true })
+  }
+}
+
+/**
+ * Builds the Rust/WASM component of the distribution into `dist/wasm`.
+ * Must run after the dist clean and before bundling so the glue resolves.
+ */
+async function buildWasm(): Promise<void> {
+  const proc = spawn(['bash', 'scripts/build-wasm.sh'], {
+    stdout: 'inherit',
+    stderr: 'inherit',
+  })
+  const exitCode = await proc.exited
+  if (exitCode !== 0) {
+    throw new Error(`WASM build failed (exit code ${exitCode})`)
   }
 }
 
@@ -37,6 +52,10 @@ async function generateTypes(sourceFilePath: string, outputDirectory: string): P
   const currentWorkingDirectory = process.cwd()
   await cleanDistDirectory('dist')
 
+  // 1. Build the WASM component into dist/wasm (glue gets inlined below).
+  await buildWasm()
+
+  // 2. Bundle the TypeScript bridge into ESM, CJS and type declarations.
   await build({
     entrypoints: ['src/index.ts'],
     outdir: 'dist/cjs',
