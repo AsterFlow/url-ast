@@ -13,6 +13,14 @@ Bem-vindo ao **url-ast**! Este guia mostrará como instalar a biblioteca e extra
 - **Node.js** ≥ 20
 - **TypeScript** ^5 (peer dependency) para inferência de tipos
 
+<Callout type="info">
+  Desde a **v4** o parser roda em um núcleo Rust compilado para WebAssembly. O
+  binário `.wasm` acompanha o pacote e é inicializado automaticamente no `import`
+  — sem configuração extra. Se você faz bundle para um target serverless/edge,
+  garanta que o asset `dist/wasm/wasm_bg.wasm` seja incluído (veja o
+  [Guia de Migração](/pt-BR/docs/migration-guide#notas-sobre-bundlers)).
+</Callout>
+
 ## Instalação
 
 Adicione o **url-ast** utilizando o seu gerenciador de pacotes favorito:

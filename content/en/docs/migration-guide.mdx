@@ -3,9 +3,54 @@
 
 import { Callout } from 'nextra/components'
 
-# Migrating from v2 to v3
+# Migration Guide
 
-This guide covers the **breaking changes** introduced in url-ast v3 and how to adapt your existing code.
+This page covers upgrading between major versions of url-ast. Start with the section for the version you are moving **from**.
+
+## Migrating from v3 to v4
+
+v4 swaps the parsing engine for a **Rust core compiled to WebAssembly**. The scanner and AST builder now run in WASM; the TypeScript layer is a thin bridge that decodes the buffer the engine returns.
+
+<Callout type="info">
+  **No source changes are required.** The template syntax and the public API (`Analyze`, `AST`, `parse`, `parseAndAnalyze`, `ErrorLog`) are identical to v3. This is an engine swap — most projects upgrade by bumping the version.
+</Callout>
+
+### What actually changed
+
+| Aspect | v3 | v4 |
+| :--- | :--- | :--- |
+| Parsing engine | TypeScript (esbuild, ES2024) | Rust → WebAssembly |
+| Runtime artifact | JS only | JS bridge + `dist/wasm/wasm_bg.wasm` |
+| WASM init | — | Synchronous at import via `node:fs` |
+| Template syntax / public API | — | **Unchanged** |
+
+### Runtime requirements
+
+The WASM module is loaded synchronously when you `import 'url-ast'`, reading `dist/wasm/wasm_bg.wasm` from disk with `node:fs`.
+
+- **Node.js ≥ 20** is required (unchanged from v3).
+- The build is **Node-targeted**. It is not meant to run directly in a browser as shipped.
+
+### Bundler notes
+
+Because the package reads a `.wasm` asset from disk at import time, bundlers must keep that asset reachable:
+
+- **Server / Node bundlers (esbuild, tsup, Next.js server):** treat `node:fs` and `node:url` as external/native, and make sure `dist/wasm/wasm_bg.wasm` is copied next to the emitted bundle. Most Node targets do this by default.
+- **Serverless / edge:** include `dist/wasm/wasm_bg.wasm` in the deployment bundle (e.g. Next.js `outputFileTracingIncludes`, or your platform's asset-inclusion setting).
+- If import fails to locate the binary, url-ast exposes `isWasmAvailable` (a boolean) so you can detect an unresolved engine early.
+
+### Migration checklist
+
+- [ ] Bump `url-ast` to `^4.0.0`
+- [ ] Confirm the runtime is Node.js ≥ 20
+- [ ] Ensure your bundler ships `dist/wasm/wasm_bg.wasm` alongside the bundle
+- [ ] No template or API changes needed — existing v3 code compiles as-is
+
+---
+
+## Migrating from v2 to v3
+
+This section covers the **breaking changes** introduced in url-ast v3 and how to adapt your existing code.
 
 <Callout type="warning">
   v3 redesigns the AST and changes the type annotation syntax. Migration requires changes to code that uses templates.

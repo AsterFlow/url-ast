@@ -2,9 +2,54 @@
 
 import { Callout } from 'nextra/components'
 
-# Migrando da v2 para a v3
+# Guia de Migração
 
-Este guia cobre as **breaking changes** introduzidas no url-ast v3 e como adaptar seu código existente.
+Esta página cobre a atualização entre versões maiores do url-ast. Comece pela seção da versão de onde você está **saindo**.
+
+## Migrando da v3 para a v4
+
+A v4 troca a engine de parsing por um **núcleo Rust compilado para WebAssembly**. O scanner e o construtor da AST agora rodam em WASM; a camada TypeScript é uma ponte fina que decodifica o buffer retornado pela engine.
+
+<Callout type="info">
+  **Nenhuma mudança de código é necessária.** A sintaxe de templates e a API pública (`Analyze`, `AST`, `parse`, `parseAndAnalyze`, `ErrorLog`) são idênticas à v3. É uma troca de engine — a maioria dos projetos atualiza apenas subindo a versão.
+</Callout>
+
+### O que realmente mudou
+
+| Aspecto | v3 | v4 |
+| :--- | :--- | :--- |
+| Engine de parsing | TypeScript (esbuild, ES2024) | Rust → WebAssembly |
+| Artefato de runtime | Apenas JS | Ponte JS + `dist/wasm/wasm_bg.wasm` |
+| Init do WASM | — | Síncrono no import via `node:fs` |
+| Sintaxe de template / API pública | — | **Inalterada** |
+
+### Requisitos de runtime
+
+O módulo WASM é carregado de forma síncrona quando você faz `import 'url-ast'`, lendo `dist/wasm/wasm_bg.wasm` do disco com `node:fs`.
+
+- **Node.js ≥ 20** é obrigatório (inalterado em relação à v3).
+- O build tem **target Node**. Não é feito para rodar diretamente no navegador como publicado.
+
+### Notas sobre bundlers
+
+Como o pacote lê um asset `.wasm` do disco no momento do import, os bundlers precisam manter esse asset acessível:
+
+- **Bundlers server / Node (esbuild, tsup, Next.js server):** trate `node:fs` e `node:url` como externos/nativos e garanta que `dist/wasm/wasm_bg.wasm` seja copiado ao lado do bundle emitido. A maioria dos targets Node faz isso por padrão.
+- **Serverless / edge:** inclua `dist/wasm/wasm_bg.wasm` no bundle de deploy (ex.: `outputFileTracingIncludes` do Next.js, ou a configuração de inclusão de assets da sua plataforma).
+- Se o import não localizar o binário, o url-ast expõe `isWasmAvailable` (booleano) para você detectar cedo uma engine não resolvida.
+
+### Checklist de migração
+
+- [ ] Suba o `url-ast` para `^4.0.0`
+- [ ] Confirme que o runtime é Node.js ≥ 20
+- [ ] Garanta que seu bundler entrega `dist/wasm/wasm_bg.wasm` junto ao bundle
+- [ ] Nenhuma mudança de template ou API é necessária — o código v3 existente compila como está
+
+---
+
+## Migrando da v2 para a v3
+
+Esta seção cobre as **breaking changes** introduzidas no url-ast v3 e como adaptar seu código existente.
 
 <Callout type="warning">
   A v3 redesenha a AST e altera a sintaxe de anotação de tipos. A migração exige mudanças no código que usa templates.

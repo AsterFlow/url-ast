@@ -4,6 +4,29 @@ Histórico completo de alterações do url-ast.
 
 ---
 
+## [4.0.0] - 2026-07-06
+
+### Alterado
+
+- **Engine de parsing reescrita em Rust e compilada para WebAssembly.** O scanner e o construtor da AST agora rodam em um núcleo Rust/WASM; a camada TypeScript virou uma ponte fina que decodifica o buffer de memória compartilhada retornado pela engine.
+- O bundle publicado tem **target Node**: o módulo WASM (`dist/wasm/wasm_bg.wasm`) é carregado de forma síncrona no import via `node:fs`. Requer Node **≥ 20**.
+- Suíte de benchmarks substituída — agora mede a engine WASM pura, e não mais o parser TypeScript antigo.
+
+### Adicionado
+
+- Componente `dist/wasm/` na distribuição, produzido por `cargo build` → `wasm-bindgen --target web` → `wasm-opt` (ver `scripts/build-wasm.sh`).
+- CI compila a engine WASM antes de rodar type-check, lint e testes.
+
+### Removido
+
+- Guia `PUBLISHING` obsoleto e a dependência de dev `wasm` sem uso.
+
+### Compatibilidade
+
+- **Nenhuma mudança de código é necessária.** A sintaxe de templates e a API pública (`Analyze`, `AST`, `parse`, `parseAndAnalyze`, `ErrorLog`) permanecem iguais à v3. Veja o [Guia de Migração](/pt-BR/docs/migration-guide) para notas sobre bundlers.
+
+---
+
 ## [3.0.0] - 2026-03-25
 
 ### Adicionado

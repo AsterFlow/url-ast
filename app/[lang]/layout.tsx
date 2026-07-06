@@ -13,6 +13,7 @@ import { Head } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
 import type { ReactNode } from 'react'
 
+import { VersionSwitch } from '@/components/version-switch'
 import { getDictionary } from '../_dictionaries/get-dictionary'
 import '../globals.css'
 
@@ -65,6 +66,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
       }
       projectLink="https://github.com/AsterFlow/url-ast"
     >
+      <VersionSwitch current="v4" />
       <LocaleSwitch lite />
     </Navbar>
   )

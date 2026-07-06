@@ -34,6 +34,6 @@ export default {
     type: 'separator',
     title: 'Comunidade'
   },
-  'migration-guide': 'Guia de Migração (v2 → v3)',
+  'migration-guide': 'Guia de Migração',
   'changelog': 'Changelog'
 }

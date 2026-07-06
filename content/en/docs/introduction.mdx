@@ -36,7 +36,7 @@ const result = new Analyze('/users/42?active=true', template)
 result.getParams()        // { id: 42 }
 result.getSearchParams()  // { active: true }`} />
 
-The parser is **scannerless** — lexing and tree construction happen in a single pass, with no intermediate steps.
+The parser is **scannerless** — lexing and tree construction happen in a single pass, with no intermediate steps. Since **v4** this pass runs in a **Rust core compiled to WebAssembly**, with the TypeScript layer acting as a thin bridge over it (see [Rust/WASM Engine](/en/docs/advanced/wasm-engine)).
 
 ## What the AST offers
 

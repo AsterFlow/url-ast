@@ -1,0 +1,78 @@
+import { Callout } from 'nextra/components'
+
+# Engine Rust/WASM
+
+Desde a **v4**, o núcleo de parsing do url-ast é escrito em **Rust** e compilado para **WebAssembly**. Esta página explica como esse pipeline funciona e o que isso significa ao consumir a biblioteca.
+
+<Callout type="info">
+  Esta é uma página de internals. Você não precisa de nada disso para usar o url-ast
+  — a engine se inicializa sozinha no `import`. Continue lendo se você faz bundle para
+  targets incomuns ou quer entender a arquitetura.
+</Callout>
+
+## Por que WASM?
+
+Parsing de URL é um laço apertado e com muitas alocações. Mover o scanner e o construtor da AST para um núcleo Rust elimina o overhead de JavaScript por token e deixa o caminho quente rodar como bytecode WebAssembly compacto. A camada TypeScript permanece — apenas vira uma **ponte fina** que entrega a entrada para a engine e decodifica o que volta.
+
+## Como as peças se encaixam
+
+```
+Crate Rust (src, bridge/mod.rs)
+      │  cargo build --target wasm32-unknown-unknown
+      ▼
+wasm-bindgen --target web        →  glue (wasm.js) + wasm_bg.wasm
+      │  wasm-opt -Oz
+      ▼
+dist/wasm/  (wasm.js, wasm.d.ts, wasm_bg.wasm)
+      │  glue inlined, binário cru carregado em runtime
+      ▼
+Ponte TypeScript (src/wasmBridge.ts)  →  Node[] + ErrorLog[]
+```
+
+- **Build:** `scripts/build-wasm.sh` roda `cargo build` para `wasm32-unknown-unknown`, depois `wasm-bindgen --target web` e então `wasm-opt -Oz` para tamanho. `wasm32-unknown-unknown` é independente de arquitetura, então um único artefato serve para toda plataforma — sem separação arm64/x86_64.
+- **Distribuição:** a saída vai para `dist/wasm/`. O glue do bindgen é inlined no bundle JS em tempo de build; só o binário cru `wasm_bg.wasm` é carregado em runtime.
+
+## Inicialização
+
+A engine é inicializada de forma **síncrona no momento do import**. Quando você faz `import 'url-ast'`, o módulo de entrada resolve `wasm_bg.wasm` relativo a si mesmo e o carrega com `node:fs`:
+
+```typescript
+// simplificado de src/initWasmSync.ts
+import { readFileSync } from 'node:fs'
+import { initSync } from 'wasm/wasm'
+
+initSync({ module: readFileSync(pathToWasmBinary) })
+export let isWasmAvailable = /* true depois de inicializar */
+```
+
+Por ser síncrona, `Analyze`, `AST` e `parse` já ficam utilizáveis logo após o import — **não há `init()` assíncrono para aguardar**.
+
+<Callout type="warning">
+  O build publicado tem **target Node**. Ele carrega o binário via `node:fs`, então,
+  como publicado, não é feito para rodar diretamente no navegador. Requer Node.js **≥ 20**.
+</Callout>
+
+### Detectando disponibilidade
+
+Se o binário não puder ser localizado (um bundler agressivo removeu o asset, por exemplo), a inicialização falha silenciosamente e a flag exportada `isWasmAvailable` permanece `false`:
+
+```typescript
+import { isWasmAvailable } from 'url-ast'
+
+if (!isWasmAvailable) {
+  throw new Error('engine WASM do url-ast falhou ao inicializar — verifique se dist/wasm/wasm_bg.wasm acompanha seu bundle')
+}
+```
+
+## O buffer da ponte
+
+Uma chamada de parse retorna uma view sobre a memória linear da engine — **sem cópia para fora**. A ponte decodifica esse buffer compartilhado de forma síncrona antes que qualquer outra chamada WASM possa invalidá-lo. O layout é:
+
+- `u16` contagem de raízes, seguida pelos nós raiz (registros de tamanho fixo, lidos recursivamente)
+- `u16` contagem de erros, seguida por cada erro como `u16 codeLen, code, u16 msgLen, msg, u32 start, u32 end`
+
+O resultado decodificado é um `{ nodes: Node[]; errors: ErrorLog[] }` simples — a mesma forma que o resto da API consome, então nada a jusante sabe que o trabalho aconteceu em Rust.
+
+## Orientação para bundlers
+
+Veja o [Guia de Migração → Notas sobre bundlers](/pt-BR/docs/migration-guide#notas-sobre-bundlers) para manter o `dist/wasm/wasm_bg.wasm` acessível em targets Node, serverless e edge.

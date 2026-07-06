@@ -13,6 +13,13 @@ Welcome to **url-ast**! This guide will show you how to install the library and 
 - **Node.js** ≥ 20
 - **TypeScript** ^5 (peer dependency) for type inference
 
+<Callout type="info">
+  Since **v4** the parser runs on a Rust core compiled to WebAssembly. The `.wasm`
+  binary ships inside the package and initializes automatically on `import` — no
+  extra setup. If you bundle for a serverless/edge target, make sure the
+  `dist/wasm/wasm_bg.wasm` asset is included (see the [Migration Guide](/en/docs/migration-guide#bundler-notes)).
+</Callout>
+
 ## Installation
 
 Add **url-ast** using your preferred package manager:

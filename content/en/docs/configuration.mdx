@@ -5,6 +5,12 @@ import { Callout } from 'nextra/components'
 
 **url-ast** can be used in different ways, from direct instantiation with `new Analyze(...)` to factory methods and advanced configuration options.
 
+<Callout type="info">
+  There is nothing to configure to start the parsing engine. Since **v4** the
+  Rust/WASM core initializes synchronously on `import` — every example below works
+  immediately, with no `init()` to await. See [Rust/WASM Engine](/en/docs/advanced/wasm-engine) for details.
+</Callout>
+
 ## Ways to create an instance
 
 ### Direct constructor
