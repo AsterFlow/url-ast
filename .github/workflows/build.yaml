@@ -4,17 +4,22 @@ on:
   push:
     branches:
       - docs
+  workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
+# Serialize runs on a single "pages" group and let an in-progress deployment
+# finish, so only one run ever owns the "github-pages" artifact (avoids the
+# "Multiple artifacts named github-pages" deploy failure).
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
-  build-and-deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout docs branch
@@ -36,6 +41,15 @@ jobs:
         with:
           path: './out'
 
+  # Kept separate so a transient deploy failure can be re-run on its own without
+  # re-uploading the artifact (which is what produced the duplicate).
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
