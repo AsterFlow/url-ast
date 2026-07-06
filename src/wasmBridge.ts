@@ -34,7 +34,7 @@ export interface WasmParseResult {
 /**
  * Parses `input` in the Rust/WASM engine and decodes the MemoryShare buffer.
  *
- * Buffer layout (see `wasm/bridge/mod.rs`):
+ * Buffer layout (see `wasm/bridge.rs`):
  * - `u16` rootCount
  * - root nodes (`Node.SIZE`-byte records, recursive) — read by {@link Node.fromBuffer}
  * - `u16` errorCount

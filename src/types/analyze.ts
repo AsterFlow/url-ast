@@ -172,7 +172,7 @@ export type AnalyzeInstance<
    * const analyzer = new Analyze('http://localhost:3000/:a/:b')
    * console.log(analyzer.getParams()) // ['a','b']
    * 
-   * const template = new Analyze('/user/:id=number')
+   * const template = new Analyze('/user/:id.number')
    * const instance = new Analyze('/user/123', template)
    * console.log(instance.getParams()) // { id: 123 }
    * ```
@@ -194,7 +194,7 @@ export type AnalyzeInstance<
    * console.log(analyzer.getSearchParams().get('a')) // ['1','2']
    * console.log(analyzer.getSearchParams().get('b')) // 'xyz'
    * 
-   * const template = new Analyze('?id=number&active=boolean')
+   * const template = new Analyze('?id.number&active.boolean')
    * const instance = new Analyze('?id=99&active=true', template)
    * console.log(instance.getSearchParams()) // { id: 99, active: true }
    * ```
@@ -301,7 +301,7 @@ export type AnalyzeInstance<
    * @returns {AnalyzeInstance<Path, S>} This instance with the new parser type.
    * @example
    * ```ts
-   * const template = new Analyze('/user/:id=number')
+   * const template = new Analyze('/user/:id.number')
    * const instance = new Analyze('/user/123').setParser(template)
    * console.log(instance.getParams()) // { id: 123 }
    * ```

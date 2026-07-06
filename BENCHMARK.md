@@ -39,7 +39,7 @@ Full URL parsing / constructor cost on a complex URL. Participants: url-ast (was
 
 ### Params (Template)
 
-Route parameter extraction from a template URL (e.g. /users/:id=number). Participants: url-ast (wasm), url-ast@3.0.1 (ts).
+Route parameter extraction from a template URL (e.g. /users/:id.number). Participants: url-ast (wasm), url-ast@3.0.1 (ts).
 
 | Task Name | Latency avg (ns) | Throughput avg (ops/s) |
 | :--- | :--- | :--- |

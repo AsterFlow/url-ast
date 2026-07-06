@@ -76,8 +76,8 @@ bun add url-ast
 | **Number** | `.number` | Converts to a numeric value. | `-42` → `-42` |
 | **Boolean** | `.boolean` | Analyzes intent and converts to boolean. | `true` or `1` → `true` |
 | **Array** | `.array` | Splits values by comma into a list. | `a,b,c` → `['a', 'b', 'c']` |
-| **Enum** | `.enum[op1,op2]` | Restricts values to an allowed list. | `admin` → `'admin'` |
-| **Generic enum** | `.enum` | Enum without variant restriction. | `anything` → `'anything'` |
+| **Enum** | `.enum[op1,op2]` | Restricts values to an allowed list. | `admin` → `['admin']` |
+| **Generic enum** | `.enum` | Enum without variant restriction. | `anything` → `['anything']` |
 
 -----
 

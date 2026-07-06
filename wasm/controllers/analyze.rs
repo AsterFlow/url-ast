@@ -623,6 +623,16 @@ struct QueryPair {
 	val_end: u32,
 }
 
+/// A template query-parameter definition: its name, cast target type, optional
+/// enum variants, and an optional `=default` literal applied when the instance
+/// omits the key.
+struct QueryDef {
+	key: String,
+	type_code: u8,
+	enum_variants: Option<Vec<String>>,
+	default: Option<String>,
+}
+
 /// `appendParam`: string on first set, `string[]` when a key repeats.
 fn append_param(map: &mut Vec<(String, Value)>, key: String, content: String) {
 	if let Some(entry) = map.iter_mut().find(|(k, _)| *k == key) {
@@ -792,8 +802,8 @@ impl<'a> Analyzer<'a> {
 		(type_code, self.enum_variants_from_template_node(var_node))
 	}
 
-	fn build_query_definitions(&self) -> Vec<(String, u8, Option<Vec<String>>)> {
-		let mut map: Vec<(String, u8, Option<Vec<String>>)> = Vec::new();
+	fn build_query_definitions(&self) -> Vec<QueryDef> {
+		let mut map: Vec<QueryDef> = Vec::new();
 		let query_node = match self.query_node() {
 			Some(n) if !n.children.is_empty() => n,
 			_ => return map,
@@ -835,10 +845,44 @@ impl<'a> Analyzer<'a> {
 				}
 			}
 
-			map.push((param_name, type_code, enum_variants));
+			// Capture a `=default` literal declared for this param (a separate
+			// `InternalDefault` node that sits between this PARAMETER and the next).
+			let mut default_value: Option<String> = None;
+			for sibling in query_node.children.iter().skip(idx + 1) {
+				if sibling.expression == PARAMETER {
+					break;
+				}
+				if sibling.expression == DEFAULT {
+					default_value = Some(self.default_literal(sibling));
+					break;
+				}
+			}
+
+			map.push(QueryDef { key: param_name, type_code, enum_variants, default: default_value });
 		}
 
 		map
+	}
+
+	/// Reads a `=default` literal from an `InternalDefault` node, tolerating a
+	/// leading `=` in case the node span includes the operator.
+	fn default_literal(&self, node: &Node) -> String {
+		let raw = if !node.value.is_empty() { node.value.clone() } else { self.content(node) };
+		raw.strip_prefix('=').map(|s| s.to_string()).unwrap_or(raw)
+	}
+
+	/// Finds a `=default` literal declared inside a dynamic path segment
+	/// (e.g. `:id.number=42`), searching the segment's node subtree.
+	fn default_in_subtree(&self, nodes: &[Node]) -> Option<String> {
+		for node in nodes {
+			if node.expression == DEFAULT {
+				return Some(self.default_literal(node));
+			}
+			if let Some(found) = self.default_in_subtree(&node.children) {
+				return Some(found);
+			}
+		}
+		None
 	}
 
 	/// Raw query-string pair extraction over a concrete instance input.
@@ -995,6 +1039,14 @@ impl<'a> Analyzer<'a> {
 					}
 					inst_idx += 1;
 				} else {
+					// Instance omitted this dynamic segment: fall back to a
+					// `=default` literal (e.g. `:id.number=42`) when declared.
+					if let Some(default_raw) = base.default_in_subtree(&dynamic.children) {
+						match cast_value(&default_raw, type_code, 0, 0, &enum_variants) {
+							Ok(value) => params.push((key, value)),
+							Err(error) => return InstanceResult::Throw(error),
+						}
+					}
 					inst_idx += 1;
 				}
 			} else {
@@ -1011,12 +1063,27 @@ impl<'a> Analyzer<'a> {
 		let instance_pairs = Analyzer::extract_query_pairs_raw(inst_input);
 
 		for pair in instance_pairs {
-			let def = match definitions.iter().find(|(k, _, _)| *k == pair.key) {
+			let def = match definitions.iter().find(|d| d.key == pair.key) {
 				Some(d) => d,
 				None => continue,
 			};
-			match cast_value(&pair.val, def.1, pair.key_start, pair.val_end, &def.2) {
+			match cast_value(&pair.val, def.type_code, pair.key_start, pair.val_end, &def.enum_variants) {
 				Ok(value) => params.push((pair.key.clone(), value)),
+				Err(error) => return InstanceResult::Throw(error),
+			}
+		}
+
+		// Apply `=default` literals for keys the instance omitted entirely.
+		for def in &definitions {
+			let default_raw = match &def.default {
+				Some(d) => d,
+				None => continue,
+			};
+			if params.iter().any(|(k, _)| *k == def.key) {
+				continue;
+			}
+			match cast_value(default_raw, def.type_code, 0, 0, &def.enum_variants) {
+				Ok(value) => params.push((def.key.clone(), value)),
 				Err(error) => return InstanceResult::Throw(error),
 			}
 		}

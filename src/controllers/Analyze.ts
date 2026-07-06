@@ -37,7 +37,7 @@ import { ErrorLog } from './Error'
  * ```ts
  * import { Analyze } from 'url-ast'
  *
- * const template = new Analyze('http://example.com/users/:id=number?active=boolean')
+ * const template = new Analyze('http://example.com/users/:id.number?active.boolean')
  * console.log(template.getPathname())     // '/users/:id'
  * console.log(template.getParams())       // ['id']
  *

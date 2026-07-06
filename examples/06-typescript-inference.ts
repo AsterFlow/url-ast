@@ -9,7 +9,7 @@ import { Analyze } from '../src'
 console.log('=== Example 06: TypeScript Type Inference ===\n')
 
 // 1. Template with types declared in the string
-const template = new Analyze('/api/:version=number/users/:userId=number?active=boolean&tags=array')
+const template = new Analyze('/api/:version.number/users/:userId.number?active.boolean&tags.array')
 
 // 2. Instance using the template
 const instance = new Analyze('/api/1/users/42?active=true&tags=a,b', template)

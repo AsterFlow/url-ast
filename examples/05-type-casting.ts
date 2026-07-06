@@ -3,7 +3,7 @@ import { Analyze, ErrorLog } from '../src'
 console.log('=== Example 05: Parameter Type Casting ===\n')
 
 // 1. Typing in Path and Query
-const template = new Analyze('/api/:version=number/users/:id=number?active=boolean&tags=array')
+const template = new Analyze('/api/:version.number/users/:id.number?active.boolean&tags.array')
 
 // Real URL: 'true' -> boolean, '123' -> number, 'a,b,c' -> array
 const url = '/api/2/users/123?active=true&tags=typescript,nodejs'
