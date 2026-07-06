@@ -6,6 +6,54 @@ import { Callout } from 'nextra/components'
 
 Esta página cobre a atualização entre versões maiores do url-ast. Comece pela seção da versão de onde você está **saindo**.
 
+## Migrando para a v4.1 (navegador / edge)
+
+A v4.1 adiciona uma **entrada de navegador** para que a engine Rust/WASM rode em navegadores, bundlers e runtimes edge — sem nenhum componente Node envolvido.
+
+<Callout type="info">
+  **Consumidores Node não são afetados.** A entrada Node continua inicializando o WASM de forma síncrona no import, então o código v4.0 existente continua funcionando sem mudanças. Esta seção só importa se você tem como target um navegador, um bundler ou um runtime edge.
+</Callout>
+
+### Importe de `url-ast/browser`
+
+Ao ter como target navegadores, bundlers ou runtimes edge, importe da entrada `url-ast/browser` em vez da raiz do pacote:
+
+```typescript
+import { Analyze, initWasm } from 'url-ast/browser'
+```
+
+### Inicialize o WASM de forma assíncrona
+
+Diferente da entrada Node, a entrada de navegador **não** inicializa o WASM automaticamente. Chame `await initWasm()` uma vez, antes do seu primeiro parse:
+
+```typescript
+import { Analyze, initWasm } from 'url-ast/browser'
+
+// Uma vez, na inicialização — antes de qualquer parsing
+await initWasm()
+
+const template = new Analyze('/users/:id.number')
+```
+
+`initWasm(input?)` aceita uma fonte WASM opcional (uma URL, `Response`, bytes ou um módulo compilado). **Sem argumento**, ele resolve `new URL('../wasm/wasm_bg.wasm', import.meta.url)` como um asset de bundler — a maioria dos bundlers reconhece isso automaticamente.
+
+<Callout type="info">
+  `initWasm` e `isWasmAvailable` também são reexportados na raiz do pacote, então você pode acessá-los a partir de `url-ast` sem trocar de entrada.
+</Callout>
+
+### `getBuffer()` retorna `Uint8Array`
+
+A serialização deixou de usar a API `Buffer` (exclusiva do Node) e passou para tipos padrão da web. `getBuffer()` agora retorna um `Uint8Array` (antes descrito como um `Buffer` do Node). Um `Buffer` *é* um `Uint8Array`, então a maioria dos consumidores não é afetada — mas atualize qualquer código de serialização que assumia especificamente um `Buffer` do Node (por exemplo, chamando métodos exclusivos de `Buffer` no resultado).
+
+### Checklist de migração
+
+- [ ] Para targets de navegador / bundler / edge, importe de `url-ast/browser`
+- [ ] Chame `await initWasm()` uma vez antes do parsing (apenas na entrada de navegador)
+- [ ] Atualize o código de serialização que dependia de `getBuffer()` retornar um `Buffer` do Node
+- [ ] Código Node não precisa de mudanças
+
+---
+
 ## Migrando da v3 para a v4
 
 A v4 troca a engine de parsing por um **núcleo Rust compilado para WebAssembly**. O scanner e o construtor da AST agora rodam em WASM; a camada TypeScript é uma ponte fina que decodifica o buffer retornado pela engine.
@@ -55,7 +103,7 @@ Esta seção cobre as **breaking changes** introduzidas no url-ast v3 e como ada
   A v3 redesenha a AST e altera a sintaxe de anotação de tipos. A migração exige mudanças no código que usa templates.
 </Callout>
 
-## Mudança principal: `.type` em vez de `=type`
+### Mudança principal: `.type` em vez de `=type`
 
 A maior breaking change da v3 é a migração da anotação de tipos do operador `=` para o operador `.`:
 
@@ -71,7 +119,7 @@ O operador `=` agora é usado **exclusivamente** para definir valores default:
 const template = new Analyze('/search?page.number=1&limit.number=10')
 ```
 
-## Novas funcionalidades na v3
+### Novas funcionalidades na v3
 
 ### Operador `~` (opcional)
 
@@ -95,7 +143,7 @@ const template = new Analyze('/theme/:mode.enum[dark,light]')
 const template = new Analyze('/status/:state.enum')
 ```
 
-## AST redesenhada
+### AST redesenhada
 
 A v3 redesenhou completamente a estrutura da AST:
 
@@ -117,14 +165,16 @@ Os valores do enum `InternalExpression` foram renomeados:
 + InternalExpression.Type
 ```
 
-## Build
+### Build
 
 A v3 migrou o build para **esbuild**, com targets CJS e ESM e target **ES2024**.
 
-## Checklist de migração
+### Checklist de migração
 
 - [ ] Substituir `=type` por `.type` em todos os templates
 - [ ] Usar `=` somente para valores default (opcionalmente com `.type`)
+- [ ] Renomear `displayErrors()` para `formatErrors()` em `Analyze`
+- [ ] Renomear `display()` para `toString()` em `AST` e `ErrorLog`
 - [ ] Atualizar imports de tipos se usava enums internos diretamente
 - [ ] Verificar se seu target de build suporta ES2024
 

@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useEffect, useId } from 'react'
+import { usePathname } from 'next/navigation'
 import { ENGINE_RELEASES, useEngine } from '@/lib/engine'
 import { Play, RotateCcw, AlertCircle, Maximize, Minimize } from 'lucide-react'
 import Editor, { useMonaco } from '@monaco-editor/react'
+import enDictionary from '@app/_dictionaries/en'
+import ptBRDictionary from '@app/_dictionaries/ptBR'
 
 type OutputLogType = {
   type: 'log' | 'warn' | 'error' | 'return';
@@ -14,6 +17,12 @@ type OutputLogType = {
 export function LiveCode({ initialCode }: { initialCode: string }) {
   const uniqueComponentId = useId()
   const { engine, version } = useEngine()
+
+  // LiveCode is embedded in MDX pages without a `lang` prop, so we derive the
+  // locale from the URL segment (`/pt-BR/...` vs `/en/...`) and read the UI
+  // strings from the shared dictionary.
+  const pathname = usePathname()
+  const t = (pathname?.includes('/pt-BR') ? ptBRDictionary : enDictionary).playground
 
   const [codeContent, setCodeContent] = useState(initialCode.trim())
   const [outputLogs, setOutputLogs] = useState<OutputLogType[]>([])
@@ -67,7 +76,7 @@ export function LiveCode({ initialCode }: { initialCode: string }) {
 
   const executeCode = () => {
     if (!engine) {
-      setErrorMessage('Loading the WASM engine…')
+      setErrorMessage(t.loadingEngine)
       return
     }
 
@@ -160,7 +169,7 @@ export function LiveCode({ initialCode }: { initialCode: string }) {
       if (executionResultData.capturedLogsArray.length > 0) {
         setOutputLogs(executionResultData.capturedLogsArray)
       } else if (executionResultData.finalExecutionResult !== undefined) {
-        setOutputLogs([{ type: 'return', label: 'Resultado', value: executionResultData.finalExecutionResult }])
+        setOutputLogs([{ type: 'return', label: t.result, value: executionResultData.finalExecutionResult }])
       } else {
         setOutputLogs([])
       }
@@ -209,7 +218,7 @@ export function LiveCode({ initialCode }: { initialCode: string }) {
             <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
             <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
           </div>
-          <span className="ml-2 text-xs font-medium text-zinc-400">Interactive Playground</span>
+          <span className="ml-2 text-xs font-medium text-zinc-400">{t.title}</span>
           <span
             className="ml-1 rounded-full bg-zinc-800 px-2 py-0.5 text-[0.625rem] font-semibold text-zinc-300 ring-1 ring-white/10"
             title={`Engine: ${ENGINE_RELEASES[version].engine}`}
@@ -221,14 +230,14 @@ export function LiveCode({ initialCode }: { initialCode: string }) {
           <button
             onClick={() => setIsFullscreenMode(!isFullscreenMode)}
             className="flex items-center justify-center rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
-            title={isFullscreenMode ? "Sair da tela cheia" : "Tela cheia"}
+            title={isFullscreenMode ? t.exitFullscreen : t.fullscreen}
           >
             {isFullscreenMode ? <Minimize className="h-3.5 w-3.5" /> : <Maximize className="h-3.5 w-3.5" />}
           </button>
           <button
             onClick={() => { setCodeContent(initialCode.trim()); setTimeout(executeCode, 50); }}
             className="flex items-center justify-center rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
-            title="Resetar código"
+            title={t.reset}
           >
             <RotateCcw className="h-3.5 w-3.5" />
           </button>
@@ -238,7 +247,7 @@ export function LiveCode({ initialCode }: { initialCode: string }) {
             className="flex items-center justify-center gap-1.5 rounded-md bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400 transition-colors hover:bg-emerald-500/20 active:scale-95 disabled:opacity-50"
           >
             <Play className="h-3 w-3" />
-            Executar
+            {t.run}
           </button>
         </div>
       </div>
@@ -246,7 +255,7 @@ export function LiveCode({ initialCode }: { initialCode: string }) {
       <div className={gridContainerClasses}>
         <div className="relative flex flex-col group/editor h-full">
           <span className="absolute right-4 top-3 text-[0.65rem] font-bold uppercase tracking-wider text-zinc-600 transition-colors group-focus-within/editor:text-emerald-500/50 pointer-events-none z-10">
-            Editor
+            {t.editor}
           </span>
           <div
             className="w-full pt-10 pb-4 transition-all duration-200"
@@ -289,7 +298,7 @@ export function LiveCode({ initialCode }: { initialCode: string }) {
 
         <div className="relative flex flex-col bg-black h-full">
           <span className="absolute right-4 top-3 text-[0.65rem] font-bold uppercase tracking-wider text-zinc-600 pointer-events-none z-10">
-            Output
+            {t.output}
           </span>
           <div className="h-full w-full overflow-auto p-5 pt-10 font-mono text-[0.8125rem] leading-relaxed">
             {errorMessage ? (
@@ -311,7 +320,7 @@ export function LiveCode({ initialCode }: { initialCode: string }) {
                 ))}
               </div>
             ) : (
-              <span className="text-zinc-600 italic">Nenhuma saída gerada</span>
+              <span className="text-zinc-600 italic">{t.noOutput}</span>
             )}
           </div>
         </div>

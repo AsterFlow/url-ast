@@ -61,7 +61,7 @@ Resulta em:
 | `.boolean` | `boolean` |
 | `.string` (ou omitido) | `string` |
 | `.array` | `string[]` |
-| `.enum[a,b,c]` | `'a' \| 'b' \| 'c'` |
+| `.enum[a,b,c]` | `string[]` |
 | `~` (prefixo) | `T \| undefined` |
 
 ## Exemplos avançados
@@ -84,7 +84,7 @@ type OptRoute = ParsePath<'/posts/:id/comments/:~commentId.number'>
 
 ```typescript
 type ThemeRoute = ParsePath<'/theme/:mode.enum[dark,light]'>
-// { params: { mode: 'dark' | 'light' }, ... }
+// { params: { mode: string[] }, ... }
 ```
 
 ### Query com default

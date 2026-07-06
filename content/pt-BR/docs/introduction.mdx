@@ -27,10 +27,10 @@ O fluxo de trabalho do url-ast gira em torno de dois conceitos:
 
 <LiveCode initialCode={`import { Analyze } from 'url-ast'
 
-// 1. Declares the template
+// 1. Declara o template
 const template = new Analyze('/users/:id.number?active.boolean')
 
-// 2. Parses a real URL against the template
+// 2. Analisa uma URL real contra o template
 const result = new Analyze('/users/42?active=true', template)
 
 result.getParams()        // { id: 42 }

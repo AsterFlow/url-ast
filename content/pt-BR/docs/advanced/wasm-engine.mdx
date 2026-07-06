@@ -17,7 +17,7 @@ Parsing de URL é um laço apertado e com muitas alocações. Mover o scanner e 
 ## Como as peças se encaixam
 
 ```
-Crate Rust (src, bridge/mod.rs)
+Crate Rust (wasm/, wasm/bridge.rs)
       │  cargo build --target wasm32-unknown-unknown
       ▼
 wasm-bindgen --target web        →  glue (wasm.js) + wasm_bg.wasm

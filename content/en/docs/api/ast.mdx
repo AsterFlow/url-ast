@@ -20,6 +20,7 @@ new AST<Path extends string>(input: Path, options?: ASTOptionalOptions)
 | :--- | :--- | :--- |
 | `input` | `string` | The original URL |
 | `nodes` | `Node[]` | Root nodes of the tree |
+| `flatNodes` | `Node[]` | Flattened node list for fast lookups |
 | `errors` | `ErrorLog[]` | Parse errors |
 | `expressions` | `Set<number>` | Expression types found |
 
@@ -132,19 +133,19 @@ toJSON(humanReadable?: boolean): ASTJSON
 
 | Parameter | Default | Description |
 | :--- | :--- | :--- |
-| `humanReadable` | `false` | `true` uses readable names (`"Path"`, `"Number"`) instead of numeric codes |
+| `humanReadable` | `false` | `true` uses readable names (`"PathSegment"`, `"NumberType"`) instead of numeric codes |
 
 <LiveCode initialCode={`const ast = new AST('/users/:id.number')
 
 ast.toJSON()       // kind: 251, type: 249
-ast.toJSON(true)   // kind: "Path", type: "Number"`} />
+ast.toJSON(true)   // kind: "PathSegment", type: "NumberType"`} />
 
 ### `getBuffer()`
 
 Serializes the AST to a binary buffer.
 
 ```typescript
-getBuffer(): Buffer
+getBuffer(): Uint8Array
 ```
 
 **Buffer layout:**
@@ -158,7 +159,7 @@ getBuffer(): Buffer
 Reconstructs an AST instance from a serialized buffer.
 
 ```typescript
-static fromBuffer(buffer: Buffer): AST<string>
+static fromBuffer(buffer: Uint8Array): AST<string>
 ```
 
 <LiveCode initialCode={`const ast = new AST('/path/:x')

@@ -5,10 +5,22 @@ export default {
   backToTop: 'Scroll to top',
   lastUpdated: 'Last updated on',
   logo: {
-    title: 'React Hooks for Data Fetching'
+    title: 'Typed URL parser with AST-based analysis'
   },
   // notFound: 'This page could not be found',
   poweredBy: 'Powered by',
   editPage: 'Edit this page on GitHub',
-  by: 'by'
+  by: 'by',
+  playground: {
+    title: 'Interactive Playground',
+    run: 'Run',
+    reset: 'Reset code',
+    fullscreen: 'Fullscreen',
+    exitFullscreen: 'Exit fullscreen',
+    editor: 'Editor',
+    output: 'Output',
+    noOutput: 'No output generated',
+    result: 'Result',
+    loadingEngine: 'Loading the WASM engine…'
+  }
 }

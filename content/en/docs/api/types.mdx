@@ -28,7 +28,7 @@ Infers only the route parameters:
 ```typescript
 import type { ParseParams } from 'url-ast'
 
-type Params = ParseParams<'id.number/posts/[slug]/tags/[...items]'>
+type Params = ParseParams<':id.number/posts/[slug]/tags/[...items]'>
 // { id: number, slug: string, items: string[] }
 ```
 
@@ -39,7 +39,7 @@ Infers query parameters:
 ```typescript
 import type { ParseSearch } from 'url-ast'
 
-type Search = ParseSearch<'q&page.number&tags.array'>
+type Search = ParseSearch<'?q&page.number&tags.array'>
 // { q: string, page: number, tags: string[] }
 ```
 
@@ -50,7 +50,7 @@ Infers the fragment:
 ```typescript
 import type { ParseFragment } from 'url-ast'
 
-type Frag = ParseFragment<'section'>
+type Frag = ParseFragment<'#section'>
 // { section: string }
 ```
 
@@ -106,6 +106,25 @@ enum InternalExpression {
   Fragment               = 253,
   Parameter              = 254,
   Type                   = 255
+}
+```
+
+### `OriginExpression`
+
+```typescript
+enum OriginExpression {
+  Protocol  = 246,
+  Hostname  = 245,
+  Port      = 244,
+  Separator = 243
+}
+```
+
+### `CatchAllExpression`
+
+```typescript
+enum CatchAllExpression {
+  Asterisk = 42  // *
 }
 ```
 

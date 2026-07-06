@@ -57,8 +57,9 @@ const parsed = url.setParser(template)
 The second argument to `Analyze` can be a template (another instance) or an options object:
 
 ```typescript
-interface AnalyzeNewOptions<T extends string> {
+type AnalyzeNewOptions<P extends string = string> = {
   base?: AnalyzeChain  // template/base for type casting
+  ast?: AST<P>         // internal/advanced field — rarely set directly
 }
 ```
 

@@ -44,9 +44,9 @@ Internamente, a AST representa a origin em três nós dedicados. Você pode aces
 <LiveCode initialCode={`const parsed = new Analyze('https://example.com:443/path')
 const origin = parsed.ast.getOriginNodes()
 
-origin.protocol  // Node { state: OriginExpression.Protocol, ... }
-origin.hostname  // Node { state: OriginExpression.Hostname, ... }
-origin.port      // Node { state: OriginExpression.Port, ... }`} />
+origin.protocol  // Node { expression: OriginExpression.Protocol, ... }
+origin.hostname  // Node { expression: OriginExpression.Hostname, ... }
+origin.port      // Node { expression: OriginExpression.Port, ... }`} />
 
 <Callout type="warning">
   Se a URL não contiver origin (ex: `/users/42`), os métodos `getProtocol()`, `getHostname()` e `getPort()` retornam `undefined`.

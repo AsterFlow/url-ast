@@ -7,6 +7,54 @@ import { Callout } from 'nextra/components'
 
 This page covers upgrading between major versions of url-ast. Start with the section for the version you are moving **from**.
 
+## Migrating to v4.1 (browser / edge)
+
+v4.1 adds a **browser entry** so the Rust/WASM engine can run in browsers, bundlers and edge runtimes — no Node components involved.
+
+<Callout type="info">
+  **Node.js consumers are unaffected.** The Node entry still initializes WASM synchronously on import, so existing v4.0 code keeps working with no changes. This section only matters if you target a browser, a bundler, or an edge runtime.
+</Callout>
+
+### Import from `url-ast/browser`
+
+When targeting browsers, bundlers or edge runtimes, import from the `url-ast/browser` entry instead of the package root:
+
+```typescript
+import { Analyze, initWasm } from 'url-ast/browser'
+```
+
+### Initialize WASM asynchronously
+
+Unlike the Node entry, the browser entry does **not** auto-initialize WASM. Call `await initWasm()` once, before your first parse:
+
+```typescript
+import { Analyze, initWasm } from 'url-ast/browser'
+
+// Once, at startup — before any parsing
+await initWasm()
+
+const template = new Analyze('/users/:id.number')
+```
+
+`initWasm(input?)` accepts an optional WASM source (a URL, `Response`, bytes or a compiled module). With **no argument**, it resolves `new URL('../wasm/wasm_bg.wasm', import.meta.url)` as a bundler asset — most bundlers pick this up automatically.
+
+<Callout type="info">
+  `initWasm` and `isWasmAvailable` are re-exported from the package root as well, so you can reach them from `url-ast` without switching entries.
+</Callout>
+
+### `getBuffer()` returns `Uint8Array`
+
+Serialization moved off the Node-only `Buffer` API onto web-standard types. `getBuffer()` now returns a `Uint8Array` (previously described as a Node `Buffer`). A `Buffer` *is* a `Uint8Array`, so most callers are unaffected — but update any serialization code that assumed a Node `Buffer` specifically (for example, calling `Buffer`-only methods on the result).
+
+### Migration checklist
+
+- [ ] For browser / bundler / edge targets, import from `url-ast/browser`
+- [ ] Call `await initWasm()` once before parsing (browser entry only)
+- [ ] Update serialization code that relied on `getBuffer()` returning a Node `Buffer`
+- [ ] Node.js code needs no changes
+
+---
+
 ## Migrating from v3 to v4
 
 v4 swaps the parsing engine for a **Rust core compiled to WebAssembly**. The scanner and AST builder now run in WASM; the TypeScript layer is a thin bridge that decodes the buffer the engine returns.
@@ -56,7 +104,7 @@ This section covers the **breaking changes** introduced in url-ast v3 and how to
   v3 redesigns the AST and changes the type annotation syntax. Migration requires changes to code that uses templates.
 </Callout>
 
-## Main change: `.type` instead of `=type`
+### Main change: `.type` instead of `=type`
 
 The biggest breaking change in v3 is the migration of type annotation from the `=` operator to the `.` operator:
 
@@ -72,7 +120,7 @@ The `=` operator is now used **exclusively** for defining default values:
 const template = new Analyze('/search?page.number=1&limit.number=10')
 ```
 
-## New features in v3
+### New features in v3
 
 ### `~` operator (optional)
 
@@ -96,7 +144,7 @@ const template = new Analyze('/theme/:mode.enum[dark,light]')
 const template = new Analyze('/status/:state.enum')
 ```
 
-## AST redesign
+### AST redesign
 
 v3 completely redesigned the AST structure:
 
@@ -118,14 +166,16 @@ The `InternalExpression` enum values were renamed:
 + InternalExpression.Type
 ```
 
-## Build
+### Build
 
 v3 migrated the build to **esbuild**, with CJS and ESM targets and **ES2024** target.
 
-## Migration checklist
+### Migration checklist
 
 - [ ] Replace `=type` with `.type` in all templates
 - [ ] Use `=` only for default values (optionally with `.type`)
+- [ ] Rename `displayErrors()` to `formatErrors()` on `Analyze`
+- [ ] Rename `display()` to `toString()` on `AST` and `ErrorLog`
 - [ ] Update type imports if you were using internal enums directly
 - [ ] Verify that your build target supports ES2024
 

@@ -16,7 +16,7 @@ new Analyze(input: string, options: AnalyzeNewOptions)
 | :--- | :--- | :--- |
 | `input` | `string` | A URL ou template a ser parseado |
 | `base` | `AnalyzeChain` | Template para type casting e matching |
-| `options` | `AnalyzeNewOptions` | Objeto com `{ parser?: AnalyzeChain }` |
+| `options` | `AnalyzeNewOptions` | Objeto com `{ base?: AnalyzeChain, ast?: AST }` |
 
 ---
 
@@ -24,8 +24,10 @@ new Analyze(input: string, options: AnalyzeNewOptions)
 
 | Propriedade | Tipo | Descrição |
 | :--- | :--- | :--- |
+| `input` | `string` | A entrada original (readonly) |
 | `ast` | `AST<string>` | A árvore sintática gerada pelo parser |
 | `errors` | `ErrorLog[]` | Erros de parse encontrados |
+| `base` | `AnalyzeChain \| undefined` | O parser de template base, se houver |
 
 ---
 
@@ -171,7 +173,7 @@ formatErrors(errors?: ErrorLog[]): string
 Serializa a instância para um `Buffer` binário.
 
 ```typescript
-getBuffer(): Buffer
+getBuffer(): Uint8Array
 ```
 
 ### `Analyze.fromBuffer(buffer)`
@@ -179,7 +181,7 @@ getBuffer(): Buffer
 Restaura uma instância a partir de um buffer serializado.
 
 ```typescript
-static fromBuffer(buffer: Buffer): AnalyzeChain
+static fromBuffer(buffer: Uint8Array): AnalyzeChain
 ```
 
 ### `Analyze.create(input, base?)`

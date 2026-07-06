@@ -16,8 +16,11 @@ Bem-vindo ao **url-ast**! Este guia mostrará como instalar a biblioteca e extra
 <Callout type="info">
   Desde a **v4** o parser roda em um núcleo Rust compilado para WebAssembly. O
   binário `.wasm` acompanha o pacote e é inicializado automaticamente no `import`
-  — sem configuração extra. Se você faz bundle para um target serverless/edge,
-  garanta que o asset `dist/wasm/wasm_bg.wasm` seja incluído (veja o
+  — sem configuração extra. Essa inicialização automática vale apenas para o
+  **entry do Node**: consumidores em browser e edge devem importar de
+  `url-ast/browser` e chamar `await initWasm()` antes de fazer o parse, pois esse
+  entry não inicializa automaticamente. Se você faz bundle para um target
+  serverless/edge, garanta que o asset `dist/wasm/wasm_bg.wasm` seja incluído (veja o
   [Guia de Migração](/pt-BR/docs/migration-guide#notas-sobre-bundlers)).
 </Callout>
 
@@ -72,7 +75,7 @@ const template = new Analyze('/users/:id.number?active.boolean&role.enum[admin,u
 const parsed = new Analyze('/users/42?active=true&role=admin', template)
 
 console.log(parsed.getParams())        // { id: 42 }
-console.log(parsed.getSearchParams())  // { active: true, role: 'admin' }
+console.log(parsed.getSearchParams())  // { active: true, role: ['admin'] }
 `} />
 
 ### Opcional: inspecione a AST

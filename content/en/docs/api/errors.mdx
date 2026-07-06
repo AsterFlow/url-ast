@@ -2,7 +2,9 @@ import { LiveCode } from '@app/_components/home';
 
 # Error Handling
 
-url-ast reports parse errors in a structured way, without throwing exceptions. This allows you to inspect problems and decide how to handle them.
+url-ast reports **parse errors** in a structured way: instead of throwing, it accumulates them silently on the `errors` property so you can inspect problems and decide how to handle them. Retrieve them with `hasErrors()` / `formatErrors()`.
+
+> **Casting is the exception.** Parse errors never throw, but **value casting** does. When you call `getParams()` or `getSearchParams()` on an instance that has a **base** parser and a value fails to cast (e.g. a non-numeric value for a `.number` param), url-ast throws a plain `Error` whose message is the formatted error.
 
 ## `ErrorLog`
 
@@ -10,9 +12,28 @@ Each parse error is represented by an `ErrorLog` instance:
 
 ```typescript
 import { ErrorLog } from 'url-ast'
+
+new ErrorLog(code: string, message: string, start: number, end: number)
 ```
 
-The `ErrorLog` class stores information about the error found during parsing, including position and context.
+`ErrorLog` is a data/formatting object that stores information about an error found during parsing, including its position. It is **not** thrown as-is — a failed cast throws a plain `Error` (never an `ErrorLog`).
+
+**Readonly fields**
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `code` | `string` | One of the [error codes](#error-codes) |
+| `message` | `string` | Human-readable description of the error |
+| `start` | `number` | Column offset where the error begins |
+| `end` | `number` | Column offset where the error ends |
+
+### `toString(input)`
+
+```typescript
+toString(input: string): string
+```
+
+Returns a colorized string of the form `Error [code] at col N: message`, followed by the `input` and a caret (`^`) underline pointing at the offending span.
 
 ---
 
@@ -55,19 +76,38 @@ console.log(parsed.ast.errors)`} />
 
 ---
 
+## Error codes
+
+Every `ErrorLog` carries a `code`. url-ast defines eight:
+
+| Code | Meaning |
+| :--- | :--- |
+| `E_INVALID_SYNTAX` | Malformed URL/template syntax |
+| `E_CONSECUTIVE_SLASHES` | Two or more consecutive slashes in the path |
+| `E_DUPLICATE_PARAM` | The same parameter name declared twice |
+| `E_INVALID_CATCH_ALL` | Malformed catch-all segment (`[...x]` / `[[...x]]`) |
+| `E_DECODE_URI` | Invalid percent-encoding in the URL (e.g. `%ZZ`) |
+| `E_CAST_NUMBER` | Value could not be cast to number |
+| `E_CAST_BOOLEAN` | Value could not be cast to boolean |
+| `E_CAST_ENUM` | Value not among the allowed enum variants |
+
+---
+
 ## Common error scenarios
 
-| Scenario | Example | Description |
+| Scenario | Example | Code |
 | :--- | :--- | :--- |
-| Unclosed bracket | `/users/[id` | Missing `]` in the dynamic segment |
-| Malformed catch-all | `/docs/[..slug]` | Missing the three dots (`...`) |
-| Invalid type | `/:id.invalid` | Unrecognized type in annotation |
+| Unclosed bracket | `/users/[id` | `E_INVALID_SYNTAX` |
+| Malformed catch-all | `/docs/[..slug]` | `E_INVALID_CATCH_ALL` |
+| Duplicate parameter | `/users/:id/posts/:id` | `E_DUPLICATE_PARAM` |
+
+> An unknown type annotation (e.g. `/:id.invalid`) is **not** an error — the type silently falls back to `string`.
 
 ---
 
 ## Error handling in production
 
-url-ast does not throw exceptions — it **accumulates** errors and continues parsing as far as possible. This allows you to:
+url-ast does not throw on **parse** errors — it **accumulates** them and continues parsing as far as possible. (Value casting on an instance with a base parser is the exception: a failed cast throws a plain `Error`.) This allows you to:
 
 1. Always get a partial result, even with malformed URLs
 2. Inspect errors and decide how to handle them

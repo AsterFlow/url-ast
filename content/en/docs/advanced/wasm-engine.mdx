@@ -17,7 +17,7 @@ URL parsing is a tight, allocation-heavy loop. Moving the scanner and AST builde
 ## How the pieces fit
 
 ```
-Rust crate (src, bridge/mod.rs)
+Rust crate (wasm/, wasm/bridge.rs)
       │  cargo build --target wasm32-unknown-unknown
       ▼
 wasm-bindgen --target web        →  glue (wasm.js) + wasm_bg.wasm

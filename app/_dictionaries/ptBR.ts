@@ -7,10 +7,22 @@ export default {
   backToTop: 'Voltar ao topo',
   lastUpdated: 'Última atualização em',
   logo: {
-    title: 'Biblioteca de React Hooks para busca de dados'
+    title: 'Parser de URL tipado com análise baseada em AST'
   },
   // notFound: 'Esta página não pôde ser encontrada',
   poweredBy: 'Desenvolvido por',
   editPage: 'Edite esta página no GitHub',
-  by: 'por'
+  by: 'por',
+  playground: {
+    title: 'Playground Interativo',
+    run: 'Executar',
+    reset: 'Resetar código',
+    fullscreen: 'Tela cheia',
+    exitFullscreen: 'Sair da tela cheia',
+    editor: 'Editor',
+    output: 'Saída',
+    noOutput: 'Nenhuma saída gerada',
+    result: 'Resultado',
+    loadingEngine: 'Carregando o motor WASM…'
+  }
 } satisfies Dictionary

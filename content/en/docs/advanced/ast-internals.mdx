@@ -6,21 +6,21 @@ This page explains the internal architecture of the parser and the structure of 
 
 ## Scannerless parser
 
-url-ast uses a **scannerless** parser: there is no separate lexer. Tokenization and tree construction happen in a **single pass** over the input string.
+Since **v4.0.0**, url-ast's parsing core runs in **Rust compiled to WebAssembly**. The Rust engine uses a **scannerless** parser: there is no separate lexer. Tokenization and tree construction happen in a **single pass** over the input string.
 
 ```
 Input: "/users/:id.number?page.number"
          ↓
    ┌─────────────────┐
-   │  AST.parser()   │  ← Char-by-char reading
-   │  (scannerless)  │     State identification
-   │                 │     Node construction
+   │  Rust/WASM      │  ← Char-by-char reading
+   │  engine         │     State identification
+   │  (scannerless)  │     Node construction
    └────────┬────────┘
             ↓
    Node[] tree
 ```
 
-The parser identifies special characters (delimiters, operators) by their **charCode** and transitions between internal states (`InternalExpression`).
+The Rust engine identifies special characters (delimiters, operators) by their **charCode** and transitions between internal states (`InternalExpression`). The TypeScript `AST` constructor calls `parsePathWasm(input)` and decodes the shared-memory buffer the engine returns into `Node`s — there is no `AST.parser()` method.
 
 ## Node structure
 
@@ -28,9 +28,13 @@ Each `Node` in the tree contains:
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `state` | `AllValues` | Node type/state (numeric enum) |
+| `id` | `number` | Unique node identifier |
+| `expression` | `AllValues` | Node type/expression (numeric enum) |
 | `start` | `number` | Start offset in the original string |
 | `end` | `number` | End offset in the original string |
+| `value` | `string` | String value carried by the node |
+| `type` | `ContentTypes` or `None` | Content type annotation |
+| `optional` | `boolean` | Whether the node is optional |
 | `body` | `Node[]` | Child nodes (sub-tree) |
 
 ## Semantic layers

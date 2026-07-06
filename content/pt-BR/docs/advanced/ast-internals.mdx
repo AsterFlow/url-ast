@@ -6,21 +6,21 @@ Esta página explica a arquitetura interna do parser e a estrutura da árvore si
 
 ## Parser scannerless
 
-O url-ast utiliza um parser **scannerless**: não existe um lexer separado. A tokenização e a construção da árvore acontecem em uma **única passada** sobre a string de entrada.
+Desde a **v4.0.0**, o núcleo de parsing do url-ast roda em **Rust compilado para WebAssembly**. A engine Rust utiliza um parser **scannerless**: não existe um lexer separado. A tokenização e a construção da árvore acontecem em uma **única passada** sobre a string de entrada.
 
 ```
 Input: "/users/:id.number?page.number"
          ↓
    ┌─────────────────┐
-   │  AST.parser()   │  ← Leitura char a char
-   │  (scannerless)  │     Identificação de estados
-   │                 │     Construção de nós
+   │  Engine         │  ← Leitura char a char
+   │  Rust/WASM      │     Identificação de estados
+   │  (scannerless)  │     Construção de nós
    └────────┬────────┘
             ↓
    Árvore de Node[]
 ```
 
-O parser identifica caracteres especiais (delimitadores, operadores) pelo seu **charCode** e transiciona entre estados internos (`InternalExpression`).
+A engine Rust identifica caracteres especiais (delimitadores, operadores) pelo seu **charCode** e transiciona entre estados internos (`InternalExpression`). O construtor `AST` do TypeScript chama `parsePathWasm(input)` e decodifica em `Node`s o buffer de memória compartilhada que a engine retorna — não existe método `AST.parser()`.
 
 ## Estrutura dos nós
 
@@ -28,9 +28,13 @@ Cada nó (`Node`) na árvore contém:
 
 | Campo | Tipo | Descrição |
 | :--- | :--- | :--- |
-| `state` | `AllValues` | Tipo/estado do nó (enum numérico) |
+| `id` | `number` | Identificador único do nó |
+| `expression` | `AllValues` | Tipo/expressão do nó (enum numérico) |
 | `start` | `number` | Offset de início na string original |
 | `end` | `number` | Offset de fim na string original |
+| `value` | `string` | Valor em string carregado pelo nó |
+| `type` | `ContentTypes` ou `None` | Anotação de tipo de conteúdo |
+| `optional` | `boolean` | Se o nó é opcional |
 | `body` | `Node[]` | Nós filhos (sub-árvore) |
 
 ## Camadas semânticas

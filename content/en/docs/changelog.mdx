@@ -1,6 +1,6 @@
 # Change History
 
-Complete change history for url-ast.
+Recent changes and release notes.
 
 ---
 
@@ -63,6 +63,8 @@ Complete change history for url-ast.
 - Grammar delimiters and symbols reorganized: `Delimiters` and `EncodingSymbols` were replaced by `ParameterDelimiters`, `DynamicVariableDelimiters`, `GeneralDelimiters`, `Operators`, and `CatchAllExpression`.
 - Internal expressions renamed/restructured (e.g., `Null` → `None`, `Value` → `Type`, new states for dynamic and *catch-all* segments); `ContentTypes.Array` adjusted numerically.
 - TypeScript inference for `ParseParams` / `ParseSearch` / `TypeMap` updated to support the new syntax (`.type`, `=default`, `~`, and `enum`).
+- Renamed the `displayErrors()` method to `formatErrors()` in the `Analyze` class and types.
+- Renamed the `display()` method to `toString()` in the `AST` and `ErrorLog` classes, adopting a language-native string-conversion standard.
 
 ### Removed
 
@@ -70,4 +72,4 @@ Complete change history for url-ast.
 
 ### Documentation
 
-- **README.md** rewritten for v3: `.type` / `=` / `~`, routes with `:` and `[]`, catch-all `[...]`, query and fragment behavior with/without base, `Analyze.create` / `fromBuffer` / `getBuffer`, AST `display` / `toJSON`, public exports table, Node 20 + TypeScript ^5 requirements.
+- **README.md** rewritten for v3: `.type` / `=` / `~`, routes with `:` and `[]`, catch-all `[...]`, query and fragment behavior with/without base, `Analyze.create` / `fromBuffer` / `getBuffer`, AST `toString` / `toJSON`, public exports table, Node 20 + TypeScript ^5 requirements.

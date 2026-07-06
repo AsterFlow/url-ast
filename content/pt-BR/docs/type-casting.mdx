@@ -16,8 +16,8 @@ Para aplicar uma conversão, adicione o sufixo `.tipo` logo após o nome da sua 
 | **Number** | `.number` | Converte a string para valor numérico. | `-42` → `-42` |
 | **Boolean** | `.boolean` | Analisa a intenção e converte para booleano. | `true` ou `1` → `true` |
 | **Array** | `.array` | Separa valores por vírgula em uma lista. | `a,b,c` → `['a', 'b', 'c']` |
-| **Enum** | `.enum[op1,op2]` | Restringe os valores a uma lista permitida. | `admin` → `'admin'` |
-| **Enum genérico** | `.enum` | Enum sem restrição de variantes. | `qualquer` → `'qualquer'` |
+| **Enum** | `.enum[op1,op2]` | Restringe os valores a uma lista permitida. | `admin` → `['admin']` |
+| **Enum genérico** | `.enum` | Enum sem restrição de variantes. | `qualquer` → `['qualquer']` |
 
 ---
 
@@ -44,7 +44,7 @@ const template = new Analyze('/theme/:color.enum[dark,light]/tags/:list.array')
 const parsed = new Analyze('/theme/dark/tags/web,api,design', template)
 
 console.log(parsed.getParams())
-// { color: 'dark', list: ['web', 'api', 'design'] }
+// { color: ['dark'], list: ['web', 'api', 'design'] }
 ```
 
 ### Query params tipados

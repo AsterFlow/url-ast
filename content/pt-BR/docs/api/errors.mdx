@@ -2,7 +2,9 @@ import { LiveCode } from '@app/_components/home';
 
 # Tratamento de Erros
 
-O url-ast reporta erros de parse de forma estruturada, sem lançar exceções. Isso permite que você inspecione problemas e decida como lidar com eles.
+O url-ast reporta **erros de parse** de forma estruturada: em vez de lançar exceções, ele os acumula silenciosamente na propriedade `errors`, para que você possa inspecionar problemas e decidir como lidar com eles. Recupere-os com `hasErrors()` / `formatErrors()`.
+
+> **A conversão de valores é a exceção.** Erros de parse nunca lançam exceção, mas a **conversão de valores** (casting) lança. Ao chamar `getParams()` ou `getSearchParams()` em uma instância que possui um parser **base** e um valor falha na conversão (por exemplo, um valor não numérico para um parâmetro `.number`), o url-ast lança um `Error` comum cuja mensagem é o erro formatado.
 
 ## `ErrorLog`
 
@@ -10,9 +12,28 @@ Cada erro de parse é representado por uma instância de `ErrorLog`:
 
 ```typescript
 import { ErrorLog } from 'url-ast'
+
+new ErrorLog(code: string, message: string, start: number, end: number)
 ```
 
-A classe `ErrorLog` armazena informações sobre o erro encontrado durante o parse, incluindo posição e contexto.
+`ErrorLog` é um objeto de dados/formatação que armazena informações sobre um erro encontrado durante o parse, incluindo sua posição. Ele **não** é lançado como está — uma conversão que falha lança um `Error` comum (nunca um `ErrorLog`).
+
+**Campos readonly**
+
+| Campo | Tipo | Descrição |
+| :--- | :--- | :--- |
+| `code` | `string` | Um dos [códigos de erro](#códigos-de-erro) |
+| `message` | `string` | Descrição legível do erro |
+| `start` | `number` | Offset da coluna onde o erro começa |
+| `end` | `number` | Offset da coluna onde o erro termina |
+
+### `toString(input)`
+
+```typescript
+toString(input: string): string
+```
+
+Retorna uma string colorida no formato `Error [code] at col N: message`, seguida pelo `input` e um sublinhado com acento circunflexo (`^`) apontando para o trecho problemático.
 
 ---
 
@@ -55,19 +76,38 @@ console.log(parsed.ast.errors)`} />
 
 ---
 
+## Códigos de erro
+
+Todo `ErrorLog` carrega um `code`. O url-ast define oito:
+
+| Código | Significado |
+| :--- | :--- |
+| `E_INVALID_SYNTAX` | Sintaxe de URL/template malformada |
+| `E_CONSECUTIVE_SLASHES` | Duas ou mais barras consecutivas no caminho |
+| `E_DUPLICATE_PARAM` | O mesmo nome de parâmetro declarado duas vezes |
+| `E_INVALID_CATCH_ALL` | Segmento catch-all malformado (`[...x]` / `[[...x]]`) |
+| `E_DECODE_URI` | Percent-encoding inválido na URL (por exemplo, `%ZZ`) |
+| `E_CAST_NUMBER` | O valor não pôde ser convertido para número |
+| `E_CAST_BOOLEAN` | O valor não pôde ser convertido para booleano |
+| `E_CAST_ENUM` | Valor fora das variantes de enum permitidas |
+
+---
+
 ## Cenários comuns de erro
 
-| Cenário | Exemplo | Descrição |
+| Cenário | Exemplo | Código |
 | :--- | :--- | :--- |
-| Colchete não fechado | `/users/[id` | Falta `]` no segmento dinâmico |
-| Catch-all malformado | `/docs/[..slug]` | Faltam os três pontos (`...`) |
-| Tipo inválido | `/:id.invalid` | Tipo não reconhecido na anotação |
+| Colchete não fechado | `/users/[id` | `E_INVALID_SYNTAX` |
+| Catch-all malformado | `/docs/[..slug]` | `E_INVALID_CATCH_ALL` |
+| Parâmetro duplicado | `/users/:id/posts/:id` | `E_DUPLICATE_PARAM` |
+
+> Uma anotação de tipo desconhecida (por exemplo, `/:id.invalid`) **não** é um erro — o tipo silenciosamente recai para `string`.
 
 ---
 
 ## Tratamento de erros em produção
 
-O url-ast não lança exceções — ele **acumula** erros e continua o parse o máximo possível. Isso permite que você:
+O url-ast não lança exceções em erros de **parse** — ele os **acumula** e continua o parse o máximo possível. (A conversão de valores em uma instância com parser base é a exceção: uma conversão que falha lança um `Error` comum.) Isso permite que você:
 
 1. Sempre obtenha um resultado parcial, mesmo com URLs malformadas
 2. Inspecione os erros e decida como tratá-los

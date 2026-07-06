@@ -20,7 +20,7 @@ import { AST } from 'url-ast'
 const ast = new AST('/users/:id.number?page.number')
 const buffer = ast.getBuffer()
 
-// `buffer` é um Buffer do Node.js pronto para salvar ou transmitir
+// `buffer` é um Uint8Array pronto para salvar ou transmitir
 ```
 
 ### Restaurar
@@ -43,7 +43,7 @@ O layout binário segue esta estrutura:
 | 6 | variável | Dados dos nós (recursivo) |
 | final | `urlLength` bytes | String da URL original (UTF-8) |
 
-Cada nó é serializado recursivamente: primeiro seus dados (state, offsets, etc.), depois os nós filhos (`body`).
+Cada nó é serializado recursivamente: primeiro seus dados (expression, offsets, etc.), depois os nós filhos (`body`).
 
 ## Analyze: `getBuffer()` / `fromBuffer()`
 

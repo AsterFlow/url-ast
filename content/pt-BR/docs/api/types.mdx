@@ -28,7 +28,7 @@ Infere apenas os parâmetros de rota:
 ```typescript
 import type { ParseParams } from 'url-ast'
 
-type Params = ParseParams<'id.number/posts/[slug]/tags/[...items]'>
+type Params = ParseParams<':id.number/posts/[slug]/tags/[...items]'>
 // { id: number, slug: string, items: string[] }
 ```
 
@@ -41,7 +41,7 @@ Infere os parâmetros de consulta:
 ```typescript
 import type { ParseSearch } from 'url-ast'
 
-type Search = ParseSearch<'q&page.number&tags.array'>
+type Search = ParseSearch<'?q&page.number&tags.array'>
 // { q: string, page: number, tags: string[] }
 ```
 
@@ -52,7 +52,7 @@ Infere o fragmento:
 ```typescript
 import type { ParseFragment } from 'url-ast'
 
-type Frag = ParseFragment<'section'>
+type Frag = ParseFragment<'#section'>
 // { section: string }
 ```
 
@@ -121,6 +121,29 @@ enum InternalExpression {
   Fragment               = 253,
   Parameter              = 254,
   Type                   = 255
+}
+```
+
+### `OriginExpression`
+
+Camada de origin (protocolo, host, porta e separador):
+
+```typescript
+enum OriginExpression {
+  Protocol  = 246,
+  Hostname  = 245,
+  Port      = 244,
+  Separator = 243
+}
+```
+
+### `CatchAllExpression`
+
+Operador de catch-all:
+
+```typescript
+enum CatchAllExpression {
+  Asterisk = 42  // *
 }
 ```
 

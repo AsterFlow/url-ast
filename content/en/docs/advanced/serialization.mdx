@@ -20,7 +20,7 @@ import { AST } from 'url-ast'
 const ast = new AST('/users/:id.number?page.number')
 const buffer = ast.getBuffer()
 
-// `buffer` is a Node.js Buffer ready to save or transmit
+// `buffer` is a Uint8Array ready to save or transmit
 ```
 
 ### Restore
@@ -41,7 +41,7 @@ console.log(restored.toString())
 | 6 | variable | Node data (recursive) |
 | end | `urlLength` bytes | Original URL string (UTF-8) |
 
-Each node is serialized recursively: first its data (state, offsets, etc.), then its child nodes (`body`).
+Each node is serialized recursively: first its data (expression, offsets, etc.), then its child nodes (`body`).
 
 ## Analyze: `getBuffer()` / `fromBuffer()`
 

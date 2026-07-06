@@ -114,7 +114,8 @@ const kindMap: Record<string, SegmentKind> = {
   DefaultValue: 'default',
   FragmentIdentifier: 'fragment',
   CatchAllSegment: 'catchall',
-  WildcardSegment: 'catchall',
+  OptionalCatchAllSegment: 'catchall',
+  WildcardExpression: 'catchall',
 }
 
 function extractNodes(obj: any): any[] {
