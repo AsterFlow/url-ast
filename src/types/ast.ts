@@ -13,6 +13,8 @@ export type DisplayRow = {
 
 export type ASTOptionalOptions = {
   nodes?: Node[]
+  /** Sobrescreve a flag calculada (ex.: `fromBuffer` futuro). Quando omitido, deriva dos nós. */
+  isDynamic?: boolean
 }
 
 export type SourceLocation = {

@@ -114,6 +114,20 @@ export const grammarTokens = [
   ...Object.values(Operators),
 ].filter((tokenValue): tokenValue is number => typeof tokenValue === 'number')
 
+/**
+ * Expressões que tornam uma rota dinâmica (`:var`, `[id]`,
+ * `[...slug]`, `[[...slug]]`, `*`). Fonte única usada pelo
+ * fallback TS (ex.: `fromBuffer`) — o caminho principal vem
+ * do parser Rust/WASM (`is_dynamic`) sem varredura extra.
+ */
+export const DYNAMIC_EXPRESSIONS: ReadonlySet<number> = new Set([
+  InternalExpression.Variable,
+  InternalExpression.Dynamic,
+  InternalExpression.DynamicCatchAll,
+  InternalExpression.DynamicOptionalCatchAll,
+  InternalExpression.Wildcard,
+])
+
 export const CONTENT_TYPE_MAP: Partial<Record<string, ContentTypes>> = {
   number: ContentTypes.Number,
   boolean: ContentTypes.Boolean,

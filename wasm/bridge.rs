@@ -11,9 +11,10 @@
 //!   u8  optional   (0/1)
 //!   u16 childCount (LE)   followed by `childCount` child records, recursively.
 //!
-//! Bridge buffer layout (`parsePath`):
+//! Bridge buffer layout (`parsePath` / `parsePathView`):
 //!   u16 rootCount
 //!   <root nodes...>
+//!   u8 isDynamic (0/1, set during parse quando há `:var`, `[id]`, `[...slug]`, `[[...slug]]` ou `*`)
 //!   u16 errorCount
 //!   <errors...>   each: u16 codeLen, code utf8, u16 msgLen, msg utf8, u32 start, u32 end
 
@@ -58,13 +59,14 @@ pub fn serialize_nodes(nodes: &[Node]) -> Vec<u8> {
 	out
 }
 
-/// Serializes a full parse result (nodes + errors) into `out`.
+/// Serializes a full parse result (nodes + isDynamic + errors) into `out`.
 pub fn serialize_parsed_into(out: &mut Vec<u8>, parsed: &ParsedAst) {
 	out.extend_from_slice(&(parsed.nodes.len() as u16).to_le_bytes());
 	for node in &parsed.nodes {
 		write_node(out, node);
 	}
 
+	out.push(u8::from(parsed.is_dynamic));
 	out.extend_from_slice(&(parsed.errors.len() as u16).to_le_bytes());
 	for error in &parsed.errors {
 		let code = error.code.as_bytes();
@@ -78,9 +80,9 @@ pub fn serialize_parsed_into(out: &mut Vec<u8>, parsed: &ParsedAst) {
 	}
 }
 
-/// Serializes a full parse result (nodes + errors) into a fresh bridge buffer.
+/// Serializes a full parse result (nodes + isDynamic + errors) into a fresh bridge buffer.
 pub fn serialize_parsed(parsed: &ParsedAst) -> Vec<u8> {
-	let mut out = Vec::with_capacity(2 + parsed.nodes.len() * Node::SIZE + 2);
+	let mut out = Vec::with_capacity(2 + parsed.nodes.len() * Node::SIZE + 1 + 2);
 	serialize_parsed_into(&mut out, parsed);
 	out
 }

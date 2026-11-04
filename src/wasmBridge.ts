@@ -24,11 +24,13 @@ export type WasmValue = string | number | boolean | string[]
 
 /**
  * Result of a WASM parse: the root node tree (rebuilt from the shared-memory
- * binary buffer) plus the parse-time error list.
+ * binary buffer) plus the parse-time error list and the `is_dynamic` flag
+ * computed during parsing (sem varredura extra no TS).
  */
 export interface WasmParseResult {
   nodes: Node[]
   errors: ErrorLog[]
+  isDynamic: boolean
 }
 
 /**
@@ -37,6 +39,7 @@ export interface WasmParseResult {
  * Buffer layout (see `wasm/bridge.rs`):
  * - `u16` rootCount
  * - root nodes (`Node.SIZE`-byte records, recursive) — read by {@link Node.fromBuffer}
+ * - `u8` isDynamic (0/1)
  * - `u16` errorCount
  * - errors: `u16 codeLen, code, u16 msgLen, msg, u32 start, u32 end`
  */
@@ -53,6 +56,9 @@ export function parsePathWasm(input: string): WasmParseResult {
 
   const { nodes, newOffset } = Node.fromBuffer(shared, offset, rootCount)
   offset = newOffset
+
+  const isDynamic = view.getUint8(offset) === 1
+  offset += 1
 
   const errorCount = view.getUint16(offset, true)
   offset += 2
@@ -77,7 +83,7 @@ export function parsePathWasm(input: string): WasmParseResult {
     errors.push(new ErrorLog(code, message, start, end))
   }
 
-  return { nodes, errors }
+  return { nodes, errors, isDynamic }
 }
 
 // === analyzer result decoding ===

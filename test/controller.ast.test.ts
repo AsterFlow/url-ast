@@ -133,4 +133,26 @@ describe('Controller: AST', () => {
     expect(typeof (raw.path?.body?.[0] as { kind: unknown }).kind).toBe('number')
     expect(typeof (hr.path?.body?.[0] as { kind: unknown }).kind).toBe('string')
   })
+
+  it('should mark static routes as non-dynamic', () => {
+    expect(new AST('/users/list').isDynamic).toBe(false)
+    expect(new AST('/').isDynamic).toBe(false)
+  })
+
+  it('should mark :var, [id], [...slug], [[...slug]] and * as dynamic', () => {
+    expect(new AST('/users/:id').isDynamic).toBe(true)
+    expect(new AST('/users/[id]').isDynamic).toBe(true)
+    expect(new AST('/users/[...slug]').isDynamic).toBe(true)
+    expect(new AST('/users/[[...slug]]').isDynamic).toBe(true)
+    expect(new AST('/users/*').isDynamic).toBe(true)
+  })
+
+  it('should not mark query-only templates as dynamic', () => {
+    expect(new AST('/search?foo').isDynamic).toBe(false)
+  })
+
+  it('should preserve isDynamic through getBuffer/fromBuffer', () => {
+    expect(AST.fromBuffer(new AST('/users/:id').getBuffer()).isDynamic).toBe(true)
+    expect(AST.fromBuffer(new AST('/users/list').getBuffer()).isDynamic).toBe(false)
+  })
 })

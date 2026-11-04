@@ -25,6 +25,7 @@ pub struct ParsedAst {
 	pub nodes: Vec<Node>,
 	pub errors: Vec<ErrorLog>,
 	pub units: Vec<u16>,
+	pub is_dynamic: bool,
 }
 
 const GRAMMAR_TOKENS: [u16; 13] = [
@@ -69,11 +70,24 @@ fn default_type(expression: u8) -> u8 {
 	}
 }
 
+/// `true` quando a expressão indica rota dinâmica (`:var`, `[id]`,
+/// `[...slug]`, `[[...slug]]`, `*`). Usado para marcar `is_dynamic`
+/// durante o parse, sem custo extra de varredura.
+#[inline]
+fn is_dynamic_expr(expression: u8) -> bool {
+	expression == InternalExpression::Dynamic as u8
+		|| expression == InternalExpression::DynamicCatchAll as u8
+		|| expression == InternalExpression::DynamicOptionalCatchAll as u8
+		|| expression == InternalExpression::Wildcard as u8
+		|| expression == InternalExpression::Variable as u8
+}
+
 pub struct AstParser {
 	units: Vec<u16>,
 	len: usize,
 	id_counter: u32,
 	has_catch_all: bool,
+	is_dynamic: bool,
 	errors: Vec<ErrorLog>,
 }
 
@@ -86,10 +100,12 @@ impl AstParser {
 			len,
 			id_counter: 0,
 			has_catch_all: false,
+			is_dynamic: false,
 			errors: Vec::new(),
 		};
 		let nodes = parser.parse_rec(NONE, 0, true, false);
-		ParsedAst { nodes, errors: parser.errors, units: parser.units }
+		let is_dynamic = parser.is_dynamic;
+		ParsedAst { nodes, errors: parser.errors, units: parser.units, is_dynamic }
 	}
 
 	#[inline]
@@ -119,9 +135,9 @@ impl AstParser {
 		String::from_utf16_lossy(&self.units[s..e])
 	}
 
-	/// Records only the fact that a catch-all/wildcard expression has appeared —
-	/// the sole property the parser ever queries about seen expressions. Replaces
-	/// the old per-char `Vec<u8>` membership push/scan.
+	/// Marca `has_catch_all` (usado para validar segmentos após catch-all) e
+	/// `is_dynamic` (rota tem `:var`, `[id]`, `[...slug]`, `[[...slug]]` ou `*`).
+	/// Replaces the old per-char `Vec<u8>` membership push/scan.
 	#[inline]
 	fn mark(&mut self, expr: u8) {
 		if expr == InternalExpression::DynamicCatchAll as u8
@@ -129,6 +145,9 @@ impl AstParser {
 			|| expr == InternalExpression::Wildcard as u8
 		{
 			self.has_catch_all = true;
+		}
+		if is_dynamic_expr(expr) {
+			self.is_dynamic = true;
 		}
 	}
 
@@ -154,6 +173,9 @@ impl AstParser {
 	}
 
 	fn make_node(&mut self, expression: u8, start: usize, end: usize, optional: bool) -> Node {
+		if is_dynamic_expr(expression) {
+			self.is_dynamic = true;
+		}
 		let id = self.id();
 		Node::new(id, expression, start as u32, end as u32, String::new(), default_type(expression), optional)
 	}

@@ -1,5 +1,5 @@
 import type { ASTOptionalOptions, ASTJSON, DisplayRow } from '../types/ast'
-import { GeneralDelimiters, InternalExpression, OriginExpression, ParameterDelimiters, RawTokens, type AllValues } from '../types/node'
+import { DYNAMIC_EXPRESSIONS, GeneralDelimiters, InternalExpression, OriginExpression, ParameterDelimiters, RawTokens, type AllValues } from '../types/node'
 import { decodeUtf8, encodeUtf8, toView } from '../utils/binary'
 import { AnsiColor, colorize, expressionKeyColorMap } from '../utils/colors'
 import { colorizePath, renderTable } from '../utils/table'
@@ -17,10 +17,13 @@ export class AST<const Path extends string> {
   readonly errors: ErrorLog[] = []
   readonly nodes: Node[]
   readonly flatNodes: Node[] = []
+  /** `true` quando a rota tem `:var`, `[id]`, `[...slug]`, `[[...slug]]` ou `*`. Calculado no parser Rust/WASM. */
+  readonly isDynamic: boolean
 
   constructor(input: Path, options?: ASTOptionalOptions) {
     this.input = input
 
+    let wasmDynamic: boolean | undefined
     if (options?.nodes) {
       // Reconstruction path (e.g. fromBuffer): nodes are already parsed.
       this.nodes = options.nodes
@@ -29,9 +32,20 @@ export class AST<const Path extends string> {
       const result = parsePathWasm(input)
       this.nodes = result.nodes
       for (const error of result.errors) this.errors.push(error)
+      wasmDynamic = result.isDynamic
     }
 
     this.flatten(this.nodes)
+    // Caminho engine usa a flag do WASM sem varredura extra; reconstrução deriva dos nós.
+    this.isDynamic = wasmDynamic ?? options?.isDynamic ?? this.hasDynamicExpression()
+  }
+
+  /** Fallback TS para `fromBuffer`: varre `expressions` com o conjunto único. */
+  private hasDynamicExpression(): boolean {
+    for (const expr of this.expressions) {
+      if (DYNAMIC_EXPRESSIONS.has(expr)) return true
+    }
+    return false
   }
 
   /**
