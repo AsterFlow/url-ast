@@ -1,5 +1,11 @@
 # Changelog
 
+## [4.1.3] - 2026-11-04
+
+### Added
+
+- `AST#isDynamic` reports whether a route contains a dynamic segment (`:var`, `[id]`, `[...slug]`, `[[...slug]]` or `*`). The flag is computed by the Rust/WASM parser during parsing — no extra tree walk — and is rebuilt from the nodes by `AST.fromBuffer` / `Analyze.fromBuffer`.
+
 ## [4.1.2] - 2026-07-06
 
 ### Fixed
